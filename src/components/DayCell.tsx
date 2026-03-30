@@ -1,9 +1,11 @@
-import { Box, HStack, Text } from "@chakra-ui/react";
+import { useState } from "react";
+import { Box, HStack, Text, Input } from "@chakra-ui/react";
 import type { PlanDay, RunProgress } from "../data/types";
 import { StarRating } from "./StarRating";
 import { NotePopover } from "./NotePopover";
 import { StravaPopover } from "./StravaPopover";
 import { COLORS } from "../theme";
+import { isRestDay } from "../lib/utils";
 
 interface DayCellProps {
   planDay: PlanDay;
@@ -16,12 +18,14 @@ const DEFAULT_PROGRESS: RunProgress = {
   rating: 0,
   note: "",
   stravaUrl: "",
+  actualKm: null,
 };
 
 export function DayCell({ planDay, progress = DEFAULT_PROGRESS, onUpdate }: DayCellProps) {
-  const isRest = planDay.km === 0 && !planDay.description.toLowerCase().includes("shakeout");
+  const [editingKm, setEditingKm] = useState(false);
+  const rest = isRestDay(planDay.description, planDay.km);
 
-  if (isRest) {
+  if (rest) {
     return (
       <Box
         p={2}
@@ -38,6 +42,9 @@ export function DayCell({ planDay, progress = DEFAULT_PROGRESS, onUpdate }: DayC
     );
   }
 
+  const displayKm = progress.actualKm ?? planDay.km;
+  const isEdited = progress.actualKm != null && progress.actualKm !== planDay.km;
+
   return (
     <Box
       p={2}
@@ -52,9 +59,49 @@ export function DayCell({ planDay, progress = DEFAULT_PROGRESS, onUpdate }: DayC
         <Text fontSize="11px" fontWeight="600" color="text.muted">
           {planDay.day}
         </Text>
-        <Text fontSize="12px" fontWeight="700" color={COLORS.emerald}>
-          {planDay.km}km
-        </Text>
+        {editingKm ? (
+          <Input
+            autoFocus
+            size="xs"
+            type="number"
+            step="0.1"
+            defaultValue={displayKm}
+            w="55px"
+            h="20px"
+            fontSize="12px"
+            fontWeight="700"
+            textAlign="right"
+            px={1}
+            onBlur={(e) => {
+              const val = parseFloat(e.target.value);
+              if (!isNaN(val) && val >= 0) {
+                onUpdate({ actualKm: val === planDay.km ? null : val });
+              }
+              setEditingKm(false);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+              if (e.key === "Escape") setEditingKm(false);
+            }}
+          />
+        ) : (
+          <Text
+            fontSize="12px"
+            fontWeight="700"
+            color={COLORS.emerald}
+            cursor="pointer"
+            onClick={() => setEditingKm(true)}
+            title="Click to edit km"
+            _hover={{ textDecoration: "underline" }}
+          >
+            {displayKm}km
+            {isEdited && (
+              <Text as="span" fontSize="9px" color="text.faint" ml={1}>
+                ({planDay.km})
+              </Text>
+            )}
+          </Text>
+        )}
       </HStack>
 
       <Text fontSize="11px" color="text.muted" mb={2} lineHeight="1.3">
