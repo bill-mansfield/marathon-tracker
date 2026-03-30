@@ -1,5 +1,5 @@
 import { HStack, Box } from "@chakra-ui/react";
-import { COLORS } from "../theme";
+import { StarIcon } from "./Icons";
 
 interface StarRatingProps {
   rating: 0 | 1 | 2 | 3;
@@ -8,24 +8,22 @@ interface StarRatingProps {
 
 export function StarRating({ rating, onChange }: StarRatingProps) {
   return (
-    <HStack gap="2px">
+    <HStack gap="1px">
       {([1, 2, 3] as const).map((star) => (
         <Box
           key={star}
           as="button"
           onClick={() => onChange(rating === star ? 0 : star)}
           cursor="pointer"
-          fontSize="16px"
-          lineHeight="1"
-          color={star <= rating ? COLORS.star : undefined}
-          opacity={star <= rating ? 1 : 0.25}
-          _hover={{ opacity: 0.7 }}
-          transition="all 0.15s"
+          display="flex"
+          alignItems="center"
+          _hover={{ transform: "scale(1.15)" }}
+          transition="transform 0.1s"
           background="none"
           border="none"
-          padding="0"
+          padding="1px"
         >
-          ★
+          <StarIcon filled={star <= rating} size={13} />
         </Box>
       ))}
     </HStack>

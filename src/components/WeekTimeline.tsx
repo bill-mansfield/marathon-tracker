@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { format, parseISO } from "date-fns";
 import type { ProgressMap } from "../data/types";
@@ -8,7 +8,18 @@ import {
   getRunnableDays,
   getCompletedCount,
 } from "../lib/utils";
-import { WEEK_TYPE_COLORS, COLORS } from "../theme";
+import { COLORS } from "../theme";
+
+// Simplified phase colour matching WeekCard
+function getPhaseColor(weekType: string): string {
+  if (weekType.includes("Cutback") || weekType.includes("Taper") || weekType.includes("Wind") || weekType.includes("Absorption"))
+    return "#10b981";
+  if (weekType.includes("Specific") || weekType.includes("Peak"))
+    return "#ef4444";
+  if (weekType === "Race Week")
+    return "#d97706";
+  return "#64748b";
+}
 
 interface WeekTimelineProps {
   progress: ProgressMap;
@@ -25,6 +36,15 @@ export function WeekTimeline({
 }: WeekTimelineProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const selectedRef = useRef<HTMLDivElement>(null);
+  const [showLeftFade, setShowLeftFade] = useState(false);
+  const [showRightFade, setShowRightFade] = useState(false);
+
+  const updateFades = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setShowLeftFade(el.scrollLeft > 8);
+    setShowRightFade(el.scrollLeft + el.clientWidth < el.scrollWidth - 8);
+  }, []);
 
   useEffect(() => {
     selectedRef.current?.scrollIntoView({
@@ -34,6 +54,18 @@ export function WeekTimeline({
     });
   }, [selectedWeek]);
 
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    updateFades();
+    el.addEventListener("scroll", updateFades, { passive: true });
+    window.addEventListener("resize", updateFades);
+    return () => {
+      el.removeEventListener("scroll", updateFades);
+      window.removeEventListener("resize", updateFades);
+    };
+  }, [updateFades]);
+
   return (
     <Box
       bg="bg.card"
@@ -42,10 +74,43 @@ export function WeekTimeline({
       borderRadius="lg"
       p={3}
       mb={4}
+      position="relative"
     >
-      <Text fontSize="13px" fontWeight="600" color="text.muted" mb={2}>
+      <Text fontSize="12px" fontWeight="600" color="text.muted" mb={2} letterSpacing="0.02em">
         Training Journey
       </Text>
+
+      {/* Left fade hint */}
+      {showLeftFade && (
+        <Box
+          position="absolute"
+          left="0"
+          top="36px"
+          bottom="0"
+          w="32px"
+          pointerEvents="none"
+          zIndex={2}
+          borderRadius="0 0 0 lg"
+          bgGradient="linear(to-r, var(--chakra-colors-bg-card), transparent)"
+          css={{ background: "linear-gradient(to right, var(--chakra-colors-bg-card, #faf8f5), transparent)" }}
+        />
+      )}
+
+      {/* Right fade hint */}
+      {showRightFade && (
+        <Box
+          position="absolute"
+          right="0"
+          top="36px"
+          bottom="0"
+          w="32px"
+          pointerEvents="none"
+          zIndex={2}
+          borderRadius="0 0 lg 0"
+          css={{ background: "linear-gradient(to left, var(--chakra-colors-bg-card, #faf8f5), transparent)" }}
+        />
+      )}
+
       <Flex
         ref={scrollRef}
         gap="6px"
@@ -67,10 +132,7 @@ export function WeekTimeline({
             runnable.length > 0 ? (completed / runnable.length) * 100 : 0;
           const isSelected = i === selectedWeek;
           const isCurrent = i === currentWeek;
-          const typeColor = WEEK_TYPE_COLORS[week.weekType] ?? {
-            bg: "#e2e8f0",
-            text: "#475569",
-          };
+          const phaseColor = getPhaseColor(week.weekType);
 
           return (
             <Box
@@ -98,11 +160,11 @@ export function WeekTimeline({
               position="relative"
               background="none"
             >
-              {/* Week type color bar */}
+              {/* Week type phase bar */}
               <Box
-                h="3px"
+                h="4px"
                 borderRadius="full"
-                bg={typeColor.bg}
+                bg={phaseColor}
                 mb="4px"
               />
 

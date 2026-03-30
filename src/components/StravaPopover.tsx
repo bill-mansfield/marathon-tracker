@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Box, Input, HStack, IconButton, Link } from "@chakra-ui/react";
+import { Box, Input, HStack, Link } from "@chakra-ui/react";
+import { StravaIcon } from "./Icons";
 import { COLORS } from "../theme";
 
 interface StravaPopoverProps {
@@ -32,21 +33,20 @@ export function StravaPopover({ url, onSave }: StravaPopoverProps) {
   return (
     <Box position="relative" display="inline-block" ref={ref}>
       {hasUrl ? (
-        <HStack gap="2px">
+        <HStack gap="3px">
           <Link
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            fontSize="14px"
-            color={COLORS.strava}
             _hover={{ opacity: 0.7 }}
             title="Open in Strava"
+            display="flex"
+            alignItems="center"
           >
-            🏃
+            <StravaIcon linked size={15} />
           </Link>
           <Box
             as="button"
-            fontSize="10px"
             cursor="pointer"
             opacity={0.4}
             _hover={{ opacity: 0.7 }}
@@ -54,33 +54,36 @@ export function StravaPopover({ url, onSave }: StravaPopoverProps) {
             background="none"
             border="none"
             padding="0"
+            display="flex"
+            alignItems="center"
+            fontSize="9px"
             color="text.muted"
           >
-            ✏️
+            edit
           </Box>
         </HStack>
       ) : (
-        <IconButton
+        <Box
+          as="button"
           aria-label="Link Strava"
-          size="xs"
-          variant="ghost"
           onClick={() => setOpen(!open)}
-          opacity={0.35}
           _hover={{ opacity: 0.7 }}
-          fontSize="14px"
-          minW="auto"
-          h="auto"
+          background="none"
+          border="none"
+          cursor="pointer"
+          display="flex"
+          alignItems="center"
           p="2px"
         >
-          🏃
-        </IconButton>
+          <StravaIcon linked={false} size={15} />
+        </Box>
       )}
       {open && (
         <Box
           position="absolute"
           top="100%"
           right="0"
-          zIndex={10}
+          zIndex={100}
           bg="bg.card"
           border="1px solid"
           borderColor="border.default"

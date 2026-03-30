@@ -9,14 +9,18 @@ interface ProgressChartProps {
   progress: ProgressMap;
   selectedWeek: number;
   onSelectWeek: (index: number) => void;
+  colorMode: "light" | "dark";
 }
 
 export function ProgressChart({
   progress,
   selectedWeek,
   onSelectWeek,
+  colorMode,
 }: ProgressChartProps) {
   const maxKm = Math.max(...TRAINING_PLAN.map((w) => w.totalKm));
+  const plannedBarColor = colorMode === "dark" ? "#4a4035" : "#cdc4b8";
+  const selectedBarColor = colorMode === "dark" ? "#1a3a2a" : "#c8ddd3";
 
   const data = TRAINING_PLAN.map((week, i) => ({
     index: i,
@@ -36,22 +40,22 @@ export function ProgressChart({
       mb={4}
     >
       <Flex justify="space-between" align="center" mb={3}>
-        <Text fontSize="13px" fontWeight="600" color="text.muted">
-          Weekly Volume (km)
+        <Text fontSize="12px" fontWeight="600" color="text.muted" letterSpacing="0.02em">
+          Weekly Volume
         </Text>
         <Flex gap={4}>
-          <Flex align="center" gap={1}>
-            <Box w="10px" h="10px" borderRadius="2px" bg="#b8ad9e" />
+          <Flex align="center" gap="5px">
+            <Box w="8px" h="8px" borderRadius="1.5px" bg={plannedBarColor} />
             <Text fontSize="10px" color="text.faint">Planned</Text>
           </Flex>
-          <Flex align="center" gap={1}>
-            <Box w="10px" h="10px" borderRadius="2px" bg={COLORS.emerald} />
+          <Flex align="center" gap="5px">
+            <Box w="8px" h="8px" borderRadius="1.5px" bg={COLORS.emerald} />
             <Text fontSize="10px" color="text.faint">Actual</Text>
           </Flex>
         </Flex>
       </Flex>
 
-      <Flex align="flex-end" gap="3px" h="140px">
+      <Flex align="flex-end" gap="3px" h="130px">
         {data.map((d) => {
           const plannedH = (d.planned / maxKm) * 100;
           const actualH = (d.actual / maxKm) * 100;
@@ -69,19 +73,21 @@ export function ProgressChart({
               onClick={() => onSelectWeek(d.index)}
               position="relative"
               title={`W${d.index + 1}: ${d.actual > 0 ? `${Math.round(d.actual)}/${d.planned}km` : `${d.planned}km planned`}`}
+              css={{
+                "& .bar": { transition: "all 0.15s" },
+                "&:hover .bar": { opacity: 0.8 },
+              }}
             >
-              {/* Planned bar (background) */}
               <Box
+                className="bar"
                 w="100%"
                 h={`${plannedH}%`}
-                bg={isSelected ? "#c8ddd3" : "#cdc4b8"}
+                bg={isSelected ? selectedBarColor : plannedBarColor}
                 borderRadius="2px 2px 0 0"
                 position="relative"
                 border={isSelected ? `1.5px solid ${COLORS.emerald}` : "none"}
                 borderBottom="none"
-                transition="all 0.15s"
               >
-                {/* Actual bar (overlay from bottom) */}
                 {d.actual > 0 && (
                   <Box
                     position="absolute"
@@ -90,32 +96,17 @@ export function ProgressChart({
                     right="0"
                     h={`${(actualH / plannedH) * 100}%`}
                     bg={COLORS.emerald}
-                    borderRadius="0 0 0 0"
                     transition="height 0.3s"
                   />
                 )}
               </Box>
-
-              {/* Week label on hover / selected */}
-              {isSelected && (
-                <Text
-                  fontSize="8px"
-                  color={COLORS.emerald}
-                  fontWeight="700"
-                  textAlign="center"
-                  mt="2px"
-                  lineHeight="1"
-                >
-                  W{d.index + 1}
-                </Text>
-              )}
             </Box>
           );
         })}
       </Flex>
 
       {/* X-axis labels */}
-      <Flex mt={1} justify="space-between">
+      <Flex mt="6px" justify="space-between">
         {data
           .filter((_, i) => i % 4 === 0 || i === data.length - 1)
           .map((d) => (

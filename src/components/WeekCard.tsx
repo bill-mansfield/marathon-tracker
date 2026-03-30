@@ -2,8 +2,19 @@ import { Box, Flex, Grid, Text, HStack } from "@chakra-ui/react";
 import { format, addDays, parseISO } from "date-fns";
 import type { PlanWeek, ProgressMap, RunProgress } from "../data/types";
 import { DayCell } from "./DayCell";
-import { WEEK_TYPE_COLORS, COLORS } from "../theme";
+import { COLORS } from "../theme";
 import { getWeekActualKm, getRunnableDays, getCompletedCount } from "../lib/utils";
+
+// Simplified to 4 phase colours
+function getPhaseColor(weekType: string): string {
+  if (weekType.includes("Cutback") || weekType.includes("Taper") || weekType.includes("Wind") || weekType.includes("Absorption"))
+    return "#10b981"; // recovery — green
+  if (weekType.includes("Specific") || weekType.includes("Peak"))
+    return "#ef4444"; // intensity — red
+  if (weekType === "Race Week")
+    return "#d97706"; // race — amber
+  return "#64748b"; // base/build — slate
+}
 
 interface WeekCardProps {
   week: PlanWeek;
@@ -27,11 +38,7 @@ export function WeekCard({
   const runnableDays = getRunnableDays(week);
   const completedCount = getCompletedCount(week, weekIndex, progress);
   const actualKm = getWeekActualKm(week, weekIndex, progress);
-
-  const typeColor = WEEK_TYPE_COLORS[week.weekType] ?? {
-    bg: "#e2e8f0",
-    text: "#475569",
-  };
+  const phaseColor = getPhaseColor(week.weekType);
 
   return (
     <Box
@@ -39,8 +46,9 @@ export function WeekCard({
       border="1px solid"
       borderColor={isCurrentWeek ? "rgba(5, 150, 105, 0.4)" : "border.subtle"}
       bg="bg.card"
-      overflow="hidden"
-      shadow={isCurrentWeek ? "0 0 0 1px rgba(5, 150, 105, 0.2)" : undefined}
+      shadow={isCurrentWeek ? "0 0 0 1px rgba(5, 150, 105, 0.15)" : undefined}
+      borderLeft="3px solid"
+      borderLeftColor={phaseColor}
     >
       {/* Header */}
       <Box px={4} py={3}>
@@ -48,45 +56,34 @@ export function WeekCard({
           <HStack gap={3}>
             {isCurrentWeek && (
               <Box
-                w="8px"
-                h="8px"
+                w="7px"
+                h="7px"
                 borderRadius="full"
-                bg="#059669"
+                bg={COLORS.emerald}
                 flexShrink={0}
               />
             )}
             <Box>
-              <Text
-                fontSize="14px"
-                fontWeight="600"
-                color="text.primary"
-                lineHeight="1.3"
-              >
-                {dateRange}
+              <HStack gap={2} align="baseline">
+                <Text fontSize="14px" fontWeight="600" color="text.primary" lineHeight="1.3">
+                  {dateRange}
+                </Text>
+                <Text fontSize="11px" color="text.faint">
+                  W{weekIndex + 1}
+                </Text>
+              </HStack>
+              <Text fontSize="11px" color="text.muted" mt="1px">
+                {week.weekType}
               </Text>
-              <Text fontSize="12px" color="text.muted">
-                Week {weekIndex + 1}
-              </Text>
-            </Box>
-            <Box
-              px={2}
-              py={0.5}
-              borderRadius="full"
-              fontSize="11px"
-              fontWeight="600"
-              bg={typeColor.bg}
-              color={typeColor.text}
-            >
-              {week.weekType}
             </Box>
           </HStack>
           <HStack gap={4}>
-            <Text fontSize="13px" fontWeight="600" color={COLORS.emerald}>
+            <Text fontSize="13px" fontWeight="700" color={COLORS.emerald} letterSpacing="-0.01em">
               {actualKm > 0
                 ? `${Math.round(actualKm * 10) / 10}/${week.totalKm}km`
                 : `${week.totalKm}km`}
             </Text>
-            <Text fontSize="12px" color="text.muted">
+            <Text fontSize="11px" color="text.faint">
               {completedCount}/{runnableDays.length} runs
             </Text>
           </HStack>
@@ -125,15 +122,22 @@ export function WeekCard({
           })}
         </Grid>
         {(week.notes || week.longRunPlan) && (
-          <Flex gap={4} flexWrap="wrap" px={1}>
+          <Flex
+            gap={3}
+            flexWrap="wrap"
+            pt={1}
+            borderTop="1px solid"
+            borderColor="border.subtle"
+            mt={1}
+          >
             {week.notes && (
-              <Text fontSize="12px" color="text.muted">
-                📋 {week.notes}
+              <Text fontSize="11px" color="text.muted" fontStyle="italic">
+                {week.notes}
               </Text>
             )}
             {week.longRunPlan && (
-              <Text fontSize="12px" color="text.muted">
-                🏔️ {week.longRunPlan}
+              <Text fontSize="11px" color="text.faint">
+                Long run: {week.longRunPlan}
               </Text>
             )}
           </Flex>

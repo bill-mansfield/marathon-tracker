@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Box, Textarea, HStack, IconButton } from "@chakra-ui/react";
+import { Box, Textarea, HStack } from "@chakra-ui/react";
+import { NoteIcon } from "./Icons";
 
 interface NotePopoverProps {
   note: string;
@@ -30,27 +31,27 @@ export function NotePopover({ note, onSave }: NotePopoverProps) {
 
   return (
     <Box position="relative" display="inline-block" ref={ref}>
-      <IconButton
+      <Box
+        as="button"
         aria-label="Add note"
-        size="xs"
-        variant="ghost"
         onClick={() => setOpen(!open)}
-        opacity={hasNote ? 1 : 0.35}
         _hover={{ opacity: 0.7 }}
-        fontSize="14px"
-        minW="auto"
-        h="auto"
+        background="none"
+        border="none"
+        cursor="pointer"
+        display="flex"
+        alignItems="center"
         p="2px"
       >
-        {hasNote ? "📝" : "💬"}
-      </IconButton>
+        <NoteIcon hasNote={hasNote} size={15} />
+      </Box>
       {open && (
         <Box
           position="absolute"
           top="100%"
           left="50%"
           transform="translateX(-50%)"
-          zIndex={10}
+          zIndex={100}
           bg="bg.card"
           border="1px solid"
           borderColor="border.default"
