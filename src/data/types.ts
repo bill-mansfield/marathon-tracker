@@ -20,6 +20,7 @@ export interface RunProgress {
   rating: 0 | 1 | 2 | 3;
   note: string;
   stravaUrl: string;
+  actualKm: number | null; // null = use planned km when completed
 }
 
 export type ProgressMap = Record<string, RunProgress>;

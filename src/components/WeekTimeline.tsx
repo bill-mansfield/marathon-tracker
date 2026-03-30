@@ -1,0 +1,173 @@
+import { useRef, useEffect } from "react";
+import { Box, Flex, Text } from "@chakra-ui/react";
+import { format, parseISO } from "date-fns";
+import type { ProgressMap } from "../data/types";
+import { TRAINING_PLAN } from "../data/trainingPlan";
+import {
+  getWeekActualKm,
+  getRunnableDays,
+  getCompletedCount,
+} from "../lib/utils";
+import { WEEK_TYPE_COLORS, COLORS } from "../theme";
+
+interface WeekTimelineProps {
+  progress: ProgressMap;
+  selectedWeek: number;
+  currentWeek: number;
+  onSelectWeek: (index: number) => void;
+}
+
+export function WeekTimeline({
+  progress,
+  selectedWeek,
+  currentWeek,
+  onSelectWeek,
+}: WeekTimelineProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const selectedRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    selectedRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center",
+    });
+  }, [selectedWeek]);
+
+  return (
+    <Box
+      bg="bg.card"
+      border="1px solid"
+      borderColor="border.subtle"
+      borderRadius="lg"
+      p={3}
+      mb={4}
+    >
+      <Text fontSize="13px" fontWeight="600" color="text.muted" mb={2}>
+        Training Journey
+      </Text>
+      <Flex
+        ref={scrollRef}
+        gap="6px"
+        overflowX="auto"
+        pb={2}
+        css={{
+          "&::-webkit-scrollbar": { height: "4px" },
+          "&::-webkit-scrollbar-thumb": {
+            background: "#d9cfc2",
+            borderRadius: "2px",
+          },
+        }}
+      >
+        {TRAINING_PLAN.map((week, i) => {
+          const runnable = getRunnableDays(week);
+          const completed = getCompletedCount(week, i, progress);
+          const actualKm = getWeekActualKm(week, i, progress);
+          const fillPct =
+            runnable.length > 0 ? (completed / runnable.length) * 100 : 0;
+          const isSelected = i === selectedWeek;
+          const isCurrent = i === currentWeek;
+          const typeColor = WEEK_TYPE_COLORS[week.weekType] ?? {
+            bg: "#e2e8f0",
+            text: "#475569",
+          };
+
+          return (
+            <Box
+              key={i}
+              ref={isSelected ? selectedRef : undefined}
+              as="button"
+              onClick={() => onSelectWeek(i)}
+              flexShrink={0}
+              w="60px"
+              p="6px"
+              borderRadius="md"
+              border="2px solid"
+              borderColor={
+                isSelected
+                  ? COLORS.emerald
+                  : isCurrent
+                    ? "rgba(5, 150, 105, 0.3)"
+                    : "transparent"
+              }
+              bg={isSelected ? "rgba(5, 150, 105, 0.06)" : "bg.muted"}
+              cursor="pointer"
+              transition="all 0.15s"
+              _hover={{ borderColor: "rgba(5, 150, 105, 0.4)" }}
+              textAlign="center"
+              position="relative"
+              background="none"
+            >
+              {/* Week type color bar */}
+              <Box
+                h="3px"
+                borderRadius="full"
+                bg={typeColor.bg}
+                mb="4px"
+              />
+
+              {/* Week number */}
+              <Text
+                fontSize="11px"
+                fontWeight="700"
+                color={isSelected ? COLORS.emerald : "text.primary"}
+                lineHeight="1"
+              >
+                W{i + 1}
+              </Text>
+
+              {/* Date */}
+              <Text fontSize="9px" color="text.faint" lineHeight="1.2" mt="2px">
+                {format(parseISO(week.weekStart), "d MMM")}
+              </Text>
+
+              {/* Progress fill bar */}
+              <Box
+                mt="4px"
+                h="4px"
+                borderRadius="full"
+                bg="bg.subtle"
+                overflow="hidden"
+              >
+                <Box
+                  h="100%"
+                  w={`${fillPct}%`}
+                  bg={COLORS.emerald}
+                  borderRadius="full"
+                  transition="width 0.3s"
+                />
+              </Box>
+
+              {/* Km summary */}
+              <Text
+                fontSize="9px"
+                color="text.faint"
+                lineHeight="1"
+                mt="3px"
+              >
+                {actualKm > 0
+                  ? `${Math.round(actualKm)}/${week.totalKm}`
+                  : `${week.totalKm}km`}
+              </Text>
+
+              {/* Current week dot */}
+              {isCurrent && (
+                <Box
+                  position="absolute"
+                  top="-3px"
+                  right="-3px"
+                  w="7px"
+                  h="7px"
+                  borderRadius="full"
+                  bg={COLORS.emerald}
+                  border="1.5px solid"
+                  borderColor="bg.card"
+                />
+              )}
+            </Box>
+          );
+        })}
+      </Flex>
+    </Box>
+  );
+}
