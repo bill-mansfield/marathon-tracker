@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Box, HStack, Text, Input } from "@chakra-ui/react";
+import { Box, HStack, Text, Input, Flex } from "@chakra-ui/react";
 import type { PlanDay, RunProgress } from "../data/types";
 import { StarRating } from "./StarRating";
 import { NotePopover } from "./NotePopover";
 import { StravaPopover } from "./StravaPopover";
+import { CheckboxIcon, PencilIcon } from "./Icons";
 import { COLORS } from "../theme";
 import { isRestDay } from "../lib/utils";
 
@@ -11,6 +12,7 @@ interface DayCellProps {
   planDay: PlanDay;
   progress: RunProgress;
   onUpdate: (patch: Partial<RunProgress>) => void;
+  compact?: boolean;
 }
 
 const DEFAULT_PROGRESS: RunProgress = {
@@ -21,24 +23,27 @@ const DEFAULT_PROGRESS: RunProgress = {
   actualKm: null,
 };
 
-export function DayCell({ planDay, progress = DEFAULT_PROGRESS, onUpdate }: DayCellProps) {
+export function DayCell({ planDay, progress = DEFAULT_PROGRESS, onUpdate, compact }: DayCellProps) {
   const [editingKm, setEditingKm] = useState(false);
   const rest = isRestDay(planDay.description, planDay.km);
 
+  // Compact rest day — just a thin label
   if (rest) {
+    if (compact) return null; // hide on mobile
     return (
-      <Box
-        p={2}
+      <Flex
+        align="center"
+        justify="center"
         borderRadius="md"
         bg="bg.muted"
-        opacity={0.5}
-        minH="70px"
+        opacity={0.4}
+        py={1}
+        minH="28px"
       >
-        <Text fontSize="11px" fontWeight="600" color="text.faint" mb={1}>
+        <Text fontSize="10px" fontWeight="600" color="text.faint" letterSpacing="0.03em">
           {planDay.day}
         </Text>
-        <Text fontSize="12px" color="text.faint">Rest</Text>
-      </Box>
+      </Flex>
     );
   }
 
@@ -49,14 +54,14 @@ export function DayCell({ planDay, progress = DEFAULT_PROGRESS, onUpdate }: DayC
     <Box
       p={2}
       borderRadius="md"
-      bg={progress.completed ? "rgba(5, 150, 105, 0.08)" : "bg.card"}
+      bg={progress.completed ? "rgba(5, 150, 105, 0.06)" : "bg.card"}
       border="1px solid"
-      borderColor={progress.completed ? "rgba(5, 150, 105, 0.3)" : "border.subtle"}
-      minH="70px"
+      borderColor={progress.completed ? "rgba(5, 150, 105, 0.25)" : "border.subtle"}
       transition="all 0.15s"
+      position="relative"
     >
       <HStack justify="space-between" mb={1}>
-        <Text fontSize="11px" fontWeight="600" color="text.muted">
+        <Text fontSize="10px" fontWeight="700" color="text.faint" letterSpacing="0.05em">
           {planDay.day}
         </Text>
         {editingKm ? (
@@ -72,6 +77,7 @@ export function DayCell({ planDay, progress = DEFAULT_PROGRESS, onUpdate }: DayC
             fontWeight="700"
             textAlign="right"
             px={1}
+            borderColor="border.default"
             onBlur={(e) => {
               const val = parseFloat(e.target.value);
               if (!isNaN(val) && val >= 0) {
@@ -85,22 +91,30 @@ export function DayCell({ planDay, progress = DEFAULT_PROGRESS, onUpdate }: DayC
             }}
           />
         ) : (
-          <Text
-            fontSize="12px"
-            fontWeight="700"
-            color={COLORS.emerald}
+          <HStack
+            gap="3px"
             cursor="pointer"
             onClick={() => setEditingKm(true)}
-            title="Click to edit km"
-            _hover={{ textDecoration: "underline" }}
+            title="Click to edit distance"
+            role="group"
+            css={{
+              "& .pencil": { opacity: 0, transition: "opacity 0.15s" },
+              "&:hover .pencil": { opacity: 0.5 },
+            }}
           >
-            {displayKm}km
+            <Text fontSize="13px" fontWeight="700" color={COLORS.emerald} lineHeight="1">
+              {displayKm}
+              <Text as="span" fontSize="10px" fontWeight="500">km</Text>
+            </Text>
             {isEdited && (
-              <Text as="span" fontSize="9px" color="text.faint" ml={1}>
+              <Text fontSize="9px" color="text.faint">
                 ({planDay.km})
               </Text>
             )}
-          </Text>
+            <Box className="pencil" color="text.faint">
+              <PencilIcon size={9} />
+            </Box>
+          </HStack>
         )}
       </HStack>
 
@@ -108,22 +122,21 @@ export function DayCell({ planDay, progress = DEFAULT_PROGRESS, onUpdate }: DayC
         {planDay.description}
       </Text>
 
-      <HStack justify="space-between" align="center" flexWrap="wrap" gap={1}>
+      <HStack justify="space-between" align="center" gap={1}>
         <Box
           as="button"
           onClick={() => onUpdate({ completed: !progress.completed })}
           cursor="pointer"
-          fontSize="16px"
-          lineHeight="1"
           background="none"
           border="none"
           padding="0"
-          opacity={progress.completed ? 1 : 0.3}
+          display="flex"
+          alignItems="center"
           _hover={{ opacity: 0.7 }}
           transition="all 0.15s"
           title={progress.completed ? "Mark incomplete" : "Mark complete"}
         >
-          {progress.completed ? "✅" : "⬜"}
+          <CheckboxIcon checked={progress.completed} size={18} />
         </Box>
 
         <StarRating
@@ -131,7 +144,7 @@ export function DayCell({ planDay, progress = DEFAULT_PROGRESS, onUpdate }: DayC
           onChange={(rating) => onUpdate({ rating })}
         />
 
-        <HStack gap="2px">
+        <HStack gap="4px">
           <NotePopover
             note={progress.note}
             onSave={(note) => onUpdate({ note })}

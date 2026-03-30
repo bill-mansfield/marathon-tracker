@@ -82,6 +82,7 @@ function App() {
           progress={progress}
           selectedWeek={selectedWeek}
           onSelectWeek={setSelectedWeek}
+          colorMode={colorMode}
         />
 
         <WeekTimeline
