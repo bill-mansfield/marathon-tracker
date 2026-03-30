@@ -1,8 +1,9 @@
-import { Box, Flex, Text, HStack } from "@chakra-ui/react";
+import { Box, Flex, Text } from "@chakra-ui/react";
 import { differenceInDays, parseISO } from "date-fns";
 import type { ProgressMap } from "../data/types";
 import { TRAINING_PLAN } from "../data/trainingPlan";
 import { COLORS } from "../theme";
+import { getWeekActualKm, getRunnableDays } from "../lib/utils";
 
 interface HeaderProps {
   progress: ProgressMap;
@@ -14,14 +15,20 @@ export function Header({ progress, colorMode, onToggleColorMode }: HeaderProps) 
   const raceDate = parseISO("2026-09-13");
   const daysUntilRace = differenceInDays(raceDate, new Date());
 
-  const allRunnable = TRAINING_PLAN.flatMap((week, wi) =>
-    week.days
-      .filter((d) => d.km > 0 || d.description.toLowerCase().includes("shakeout"))
-      .map((d) => ({ key: `${wi}-${d.day}`, km: d.km }))
-  );
+  let totalRuns = 0;
+  let completedRuns = 0;
+  let totalKmLogged = 0;
+  const totalKmPlanned = TRAINING_PLAN.reduce((s, w) => s + w.totalKm, 0);
 
-  const completedRuns = allRunnable.filter((r) => progress[r.key]?.completed);
-  const totalKmCompleted = completedRuns.reduce((sum, r) => sum + r.km, 0);
+  TRAINING_PLAN.forEach((week, wi) => {
+    const runnable = getRunnableDays(week);
+    totalRuns += runnable.length;
+    runnable.forEach((d) => {
+      const key = `${wi}-${d.day}`;
+      if (progress[key]?.completed) completedRuns++;
+    });
+    totalKmLogged += getWeekActualKm(week, wi, progress);
+  });
 
   return (
     <Box px={4} py={6} mb={2}>
@@ -62,12 +69,12 @@ export function Header({ progress, colorMode, onToggleColorMode }: HeaderProps) 
         />
         <StatBox
           label="Runs Completed"
-          value={`${completedRuns.length}/${allRunnable.length}`}
+          value={`${completedRuns}/${totalRuns}`}
           color={COLORS.sky}
         />
         <StatBox
           label="Km Logged"
-          value={`${Math.round(totalKmCompleted)}`}
+          value={`${Math.round(totalKmLogged)}/${totalKmPlanned}`}
           color={COLORS.amber}
         />
       </Flex>

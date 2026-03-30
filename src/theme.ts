@@ -22,6 +22,7 @@ export const system = createSystem(defaultConfig, config);
 
 export const COLORS = {
   emerald: "#059669",
+  emeraldLight: "#d1fae5",
   amber: "#d97706",
   star: "#d97706",
   red: "#dc2626",
@@ -29,6 +30,9 @@ export const COLORS = {
   slate: "#64748b",
   sky: "#0ea5e9",
   strava: "#fc4c02",
+  chartPlanned: "#d9cfc2",
+  chartActual: "#059669",
+  chartGrid: "#e8e0d6",
 };
 
 export const WEEK_TYPE_COLORS: Record<string, { bg: string; text: string }> = {
