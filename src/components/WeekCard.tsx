@@ -46,7 +46,6 @@ export function WeekCard({
       border="1px solid"
       borderColor={isCurrentWeek ? "rgba(5, 150, 105, 0.4)" : "border.subtle"}
       bg="bg.card"
-      overflow="hidden"
       shadow={isCurrentWeek ? "0 0 0 1px rgba(5, 150, 105, 0.15)" : undefined}
       borderLeft="3px solid"
       borderLeftColor={phaseColor}

@@ -83,7 +83,7 @@ export function StravaPopover({ url, onSave }: StravaPopoverProps) {
           position="absolute"
           top="100%"
           right="0"
-          zIndex={10}
+          zIndex={100}
           bg="bg.card"
           border="1px solid"
           borderColor="border.default"

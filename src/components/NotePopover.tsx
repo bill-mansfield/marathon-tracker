@@ -51,7 +51,7 @@ export function NotePopover({ note, onSave }: NotePopoverProps) {
           top="100%"
           left="50%"
           transform="translateX(-50%)"
-          zIndex={10}
+          zIndex={100}
           bg="bg.card"
           border="1px solid"
           borderColor="border.default"
