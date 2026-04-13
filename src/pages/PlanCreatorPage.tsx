@@ -469,9 +469,9 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 function phaseColor(weekType: string): string {
-  if (weekType.includes("Cutback") || weekType.includes("Taper")) return "#10b981";
+  if (weekType.includes("Cutback") || weekType.includes("Taper") || weekType.includes("Absorption") || weekType.includes("Wind")) return "#10b981";
   if (weekType.includes("Specific") || weekType.includes("Peak")) return "#ef4444";
   if (weekType === "Race Week") return "#d97706";
-  if (weekType.includes("Build")) return "#f97316";
+  if (weekType.includes("Build") || weekType.includes("Transition")) return "#f97316";
   return "#64748b";
 }
