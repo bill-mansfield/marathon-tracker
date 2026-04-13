@@ -16,7 +16,6 @@ interface HeaderProps {
   supportsLinkedFile: boolean;
   onLinkSaveFile: () => void;
   onExportJson: () => void;
-  onImportJson: () => void;
   onBack?: () => void;
 }
 
@@ -31,7 +30,6 @@ export function Header({
   supportsLinkedFile,
   onLinkSaveFile,
   onExportJson,
-  onImportJson,
   onBack,
 }: HeaderProps) {
   const raceDate = parseISO(raceDateStr);
@@ -156,22 +154,6 @@ export function Header({
               _hover={{ transform: "translateY(-1px)" }}
             >
               Export JSON
-            </Box>
-            <Box
-              as="button"
-              onClick={onImportJson}
-              fontSize="12px"
-              fontWeight="700"
-              px={3}
-              py={2}
-              borderRadius="full"
-              bg="bg.card"
-              color="text.primary"
-              border="1px solid"
-              borderColor="border.subtle"
-              _hover={{ transform: "translateY(-1px)" }}
-            >
-              Import JSON
             </Box>
             <Box
               as="button"
