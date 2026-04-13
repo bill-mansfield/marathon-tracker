@@ -1,33 +1,51 @@
 import { Box, Flex, Text, HStack } from "@chakra-ui/react";
 import { differenceInDays, parseISO } from "date-fns";
-import type { ProgressMap } from "../data/types";
-import { TRAINING_PLAN } from "../data/trainingPlan";
+import type { PlanWeek, ProgressMap } from "../data/types";
 import { COLORS } from "../theme";
-import { getWeekActualKm, getRunnableDays } from "../lib/utils";
+import { getRunTotals, getWeekActualKm } from "../lib/utils";
 import { SunIcon, MoonIcon } from "./Icons";
 
 interface HeaderProps {
+  weeks: PlanWeek[];
+  planName: string;
+  raceDate: string; // ISO date string
   progress: ProgressMap;
   colorMode: "light" | "dark";
   onToggleColorMode: () => void;
+  linkedFileEnabled: boolean;
+  supportsLinkedFile: boolean;
+  onLinkSaveFile: () => void;
+  onExportJson: () => void;
+  onImportJson: () => void;
+  onBack?: () => void;
 }
 
-export function Header({ progress, colorMode, onToggleColorMode }: HeaderProps) {
-  const raceDate = parseISO("2026-09-13");
+export function Header({
+  weeks,
+  planName,
+  raceDate: raceDateStr,
+  progress,
+  colorMode,
+  onToggleColorMode,
+  linkedFileEnabled,
+  supportsLinkedFile,
+  onLinkSaveFile,
+  onExportJson,
+  onImportJson,
+  onBack,
+}: HeaderProps) {
+  const raceDate = parseISO(raceDateStr);
   const daysUntilRace = differenceInDays(raceDate, new Date());
 
   let totalRuns = 0;
   let completedRuns = 0;
   let totalKmLogged = 0;
-  const totalKmPlanned = TRAINING_PLAN.reduce((s, w) => s + w.totalKm, 0);
+  const totalKmPlanned = weeks.reduce((s, w) => s + w.totalKm, 0);
 
-  TRAINING_PLAN.forEach((week, wi) => {
-    const runnable = getRunnableDays(week);
-    totalRuns += runnable.length;
-    runnable.forEach((d) => {
-      const key = `${wi}-${d.day}`;
-      if (progress[key]?.completed) completedRuns++;
-    });
+  weeks.forEach((week, wi) => {
+    const runTotals = getRunTotals(week, wi, progress);
+    totalRuns += runTotals.total;
+    completedRuns += runTotals.completed;
     totalKmLogged += getWeekActualKm(week, wi, progress);
   });
 
@@ -53,8 +71,24 @@ export function Header({ progress, colorMode, onToggleColorMode }: HeaderProps) 
         </svg>
       </Box>
 
-      <Flex justify="space-between" align="start" mb={4}>
+      <Flex justify="space-between" align="start" mb={4} gap={4}>
         <Box>
+          {onBack && (
+            <Box
+              as="button"
+              onClick={onBack}
+              fontSize="12px"
+              fontWeight="600"
+              color="text.muted"
+              background="none"
+              border="none"
+              cursor="pointer"
+              mb="4px"
+              _hover={{ color: "text.primary" }}
+            >
+              &larr; Dashboard
+            </Box>
+          )}
           <Text
             fontSize="10px"
             fontWeight="600"
@@ -72,30 +106,96 @@ export function Header({ progress, colorMode, onToggleColorMode }: HeaderProps) 
             lineHeight="1.15"
             letterSpacing="-0.02em"
           >
-            Blue Mountains
-            <br />
-            Marathon
+            {planName}
           </Text>
           <Text fontSize="12px" color="text.muted" mt="4px">
-            13 September 2026
+            {raceDate.toLocaleDateString("en-AU", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
           </Text>
         </Box>
-        <Box
-          as="button"
-          onClick={onToggleColorMode}
-          background="none"
-          border="none"
-          cursor="pointer"
-          p="6px"
-          borderRadius="md"
-          color="text.muted"
-          _hover={{ bg: "bg.muted", color: "text.primary" }}
-          transition="all 0.15s"
-          display="flex"
-          alignItems="center"
+        <Flex
+          direction="column"
+          align="end"
+          gap={2}
+          flexShrink={0}
         >
-          {colorMode === "light" ? <MoonIcon size={18} /> : <SunIcon size={18} />}
-        </Box>
+          <HStack gap={2} flexWrap="wrap" justify="end">
+            {supportsLinkedFile ? (
+              <Box
+                as="button"
+                onClick={onLinkSaveFile}
+                fontSize="12px"
+                fontWeight="700"
+                px={3}
+                py={2}
+                borderRadius="full"
+                bg={linkedFileEnabled ? "green.500" : "bg.card"}
+                color={linkedFileEnabled ? "white" : "text.primary"}
+                border="1px solid"
+                borderColor={linkedFileEnabled ? "green.500" : "border.subtle"}
+                _hover={{ transform: "translateY(-1px)" }}
+              >
+                {linkedFileEnabled ? "JSON linked" : "Link JSON save"}
+              </Box>
+            ) : null}
+            <Box
+              as="button"
+              onClick={onExportJson}
+              fontSize="12px"
+              fontWeight="700"
+              px={3}
+              py={2}
+              borderRadius="full"
+              bg="bg.card"
+              color="text.primary"
+              border="1px solid"
+              borderColor="border.subtle"
+              _hover={{ transform: "translateY(-1px)" }}
+            >
+              Export JSON
+            </Box>
+            <Box
+              as="button"
+              onClick={onImportJson}
+              fontSize="12px"
+              fontWeight="700"
+              px={3}
+              py={2}
+              borderRadius="full"
+              bg="bg.card"
+              color="text.primary"
+              border="1px solid"
+              borderColor="border.subtle"
+              _hover={{ transform: "translateY(-1px)" }}
+            >
+              Import JSON
+            </Box>
+            <Box
+              as="button"
+              onClick={onToggleColorMode}
+              background="none"
+              border="none"
+              cursor="pointer"
+              p="6px"
+              borderRadius="md"
+              color="text.muted"
+              _hover={{ bg: "bg.muted", color: "text.primary" }}
+              transition="all 0.15s"
+              display="flex"
+              alignItems="center"
+            >
+              {colorMode === "light" ? <MoonIcon size={18} /> : <SunIcon size={18} />}
+            </Box>
+          </HStack>
+          <Text fontSize="11px" color="text.faint" textAlign="right" maxW="220px">
+            {linkedFileEnabled
+              ? "Updates are also saved to your linked JSON file."
+              : "Local saves stay in this browser. Link or export JSON for backup."}
+          </Text>
+        </Flex>
       </Flex>
 
       {/* Inline stats bar */}

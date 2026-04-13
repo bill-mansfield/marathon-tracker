@@ -6,26 +6,28 @@ import { NotePopover } from "./NotePopover";
 import { StravaPopover } from "./StravaPopover";
 import { CheckboxIcon, PencilIcon } from "./Icons";
 import { COLORS } from "../theme";
-import { isRestDay } from "../lib/utils";
+import { DEFAULT_PROGRESS, isRestDay } from "../lib/utils";
 
 interface DayCellProps {
   planDay: PlanDay;
   progress: RunProgress;
   onUpdate: (patch: Partial<RunProgress>) => void;
   compact?: boolean;
+  onRemove?: () => void;
+  removeLabel?: string;
 }
 
-const DEFAULT_PROGRESS: RunProgress = {
-  completed: false,
-  rating: 0,
-  note: "",
-  stravaUrl: "",
-  actualKm: null,
-};
-
-export function DayCell({ planDay, progress = DEFAULT_PROGRESS, onUpdate, compact }: DayCellProps) {
+export function DayCell({
+  planDay,
+  progress = DEFAULT_PROGRESS,
+  onUpdate,
+  compact,
+  onRemove,
+  removeLabel = "Remove",
+}: DayCellProps) {
   const [editingKm, setEditingKm] = useState(false);
-  const rest = isRestDay(planDay.description, planDay.km);
+  const [editingDescription, setEditingDescription] = useState(false);
+  const rest = isRestDay(planDay.description, planDay.km) && !progress.isExtra;
 
   // Compact rest day — just a thin label
   if (rest) {
@@ -49,6 +51,7 @@ export function DayCell({ planDay, progress = DEFAULT_PROGRESS, onUpdate, compac
 
   const displayKm = progress.actualKm ?? planDay.km;
   const isEdited = progress.actualKm != null && progress.actualKm !== planDay.km;
+  const description = progress.description ?? planDay.description;
 
   return (
     <Box
@@ -118,9 +121,41 @@ export function DayCell({ planDay, progress = DEFAULT_PROGRESS, onUpdate, compac
         )}
       </HStack>
 
-      <Text fontSize="11px" color="text.muted" mb={2} lineHeight="1.3">
-        {planDay.description}
-      </Text>
+      {editingDescription ? (
+        <Input
+          autoFocus
+          size="xs"
+          defaultValue={description}
+          mb={2}
+          h="24px"
+          fontSize="11px"
+          onBlur={(e) => {
+            onUpdate({ description: e.target.value.trim() || planDay.description });
+            setEditingDescription(false);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+            if (e.key === "Escape") setEditingDescription(false);
+          }}
+        />
+      ) : (
+        <HStack
+          justify="space-between"
+          align="start"
+          gap={1}
+          mb={2}
+          cursor="pointer"
+          onClick={() => setEditingDescription(true)}
+          title="Click to edit description"
+        >
+          <Text fontSize="11px" color="text.muted" lineHeight="1.3">
+            {description}
+          </Text>
+          <Box color="text.faint" flexShrink={0} mt="2px">
+            <PencilIcon size={9} />
+          </Box>
+        </HStack>
+      )}
 
       <HStack justify="space-between" align="center" gap={1}>
         <Box
@@ -145,6 +180,22 @@ export function DayCell({ planDay, progress = DEFAULT_PROGRESS, onUpdate, compac
         />
 
         <HStack gap="4px">
+          {onRemove ? (
+            <Box
+              as="button"
+              onClick={onRemove}
+              cursor="pointer"
+              background="none"
+              border="none"
+              padding="0"
+              fontSize="11px"
+              color="text.faint"
+              _hover={{ color: "text.primary" }}
+              title={removeLabel}
+            >
+              {removeLabel}
+            </Box>
+          ) : null}
           <NotePopover
             note={progress.note}
             onSave={(note) => onUpdate({ note })}

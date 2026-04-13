@@ -13,10 +13,6 @@ export function NotePopover({ note, onSave }: NotePopoverProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (open) setDraft(note);
-  }, [open, note]);
-
-  useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -34,7 +30,10 @@ export function NotePopover({ note, onSave }: NotePopoverProps) {
       <Box
         as="button"
         aria-label="Add note"
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          if (!open) setDraft(note);
+          setOpen(!open);
+        }}
         _hover={{ opacity: 0.7 }}
         background="none"
         border="none"

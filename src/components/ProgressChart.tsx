@@ -1,11 +1,11 @@
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { format, parseISO } from "date-fns";
-import type { ProgressMap } from "../data/types";
-import { TRAINING_PLAN } from "../data/trainingPlan";
+import type { PlanWeek, ProgressMap } from "../data/types";
 import { getWeekActualKm } from "../lib/utils";
 import { COLORS } from "../theme";
 
 interface ProgressChartProps {
+  weeks: PlanWeek[];
   progress: ProgressMap;
   selectedWeek: number;
   onSelectWeek: (index: number) => void;
@@ -13,16 +13,17 @@ interface ProgressChartProps {
 }
 
 export function ProgressChart({
+  weeks,
   progress,
   selectedWeek,
   onSelectWeek,
   colorMode,
 }: ProgressChartProps) {
-  const maxKm = Math.max(...TRAINING_PLAN.map((w) => w.totalKm));
+  const maxKm = Math.max(...weeks.map((w) => w.totalKm));
   const plannedBarColor = colorMode === "dark" ? "#4a4035" : "#cdc4b8";
   const selectedBarColor = colorMode === "dark" ? "#1a3a2a" : "#c8ddd3";
 
-  const data = TRAINING_PLAN.map((week, i) => ({
+  const data = weeks.map((week, i) => ({
     index: i,
     label: format(parseISO(week.weekStart), "d MMM"),
     planned: week.totalKm,
