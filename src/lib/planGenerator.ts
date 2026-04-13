@@ -153,6 +153,7 @@ export function generatePlan(config: PlanGeneratorConfig): PlanWeek[] {
 
   // Helper to add a week
   function addWeek(phase: Phase, weekType: string, isDeload: boolean) {
+    const preDeloadKm = currentKm;
     if (isDeload && config.options.deloads) {
       currentKm = currentKm * 0.8;
     }
@@ -161,8 +162,8 @@ export function generatePlan(config: PlanGeneratorConfig): PlanWeek[] {
     if (!isDeload) {
       currentKm *= increaseFactor;
     } else {
-      // After deload, resume from pre-deload level
-      currentKm = currentKm / 0.8 * increaseFactor * 0.8; // net: slight bump after deload
+      // Resume progression from the pre-deload level — deload only affects that one week
+      currentKm = preDeloadKm * increaseFactor;
     }
     weeksSinceDeload = isDeload ? 0 : weeksSinceDeload + 1;
   }
