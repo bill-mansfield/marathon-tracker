@@ -4,7 +4,8 @@ import { Box, HStack, Text } from "@chakra-ui/react";
 import { parseISO, isWithinInterval, addDays } from "date-fns";
 import type { PlanWeek } from "../data/types";
 import { getExtraRunKey, DEFAULT_PROGRESS } from "../lib/utils";
-import { importProgressFile } from "../lib/storage";
+import { exportPlanJson, importPlanJson } from "../lib/storage";
+import { createPlan, importPlanProgress } from "../lib/supabaseStorage";
 import { usePlanData } from "../hooks/usePlanData";
 import { Header } from "../components/Header";
 import { WeekCard } from "../components/WeekCard";
@@ -51,6 +52,11 @@ export function PlanViewPage() {
     [updateProgress]
   );
 
+  const handleExportJson = useCallback(() => {
+    if (!plan) return;
+    exportPlanJson(plan, progress);
+  }, [plan, progress]);
+
   const handleImportJson = useCallback(() => {
     const input = document.createElement("input");
     input.type = "file";
@@ -58,14 +64,27 @@ export function PlanViewPage() {
     input.onchange = async () => {
       const file = input.files?.[0];
       if (!file) return;
-      const imported = await importProgressFile(file);
+      const imported = await importPlanJson(file);
       if (!imported) return;
-      Object.entries(imported).forEach(([key, value]) => {
-        updateProgress(key, value);
+      const { plan: importedPlan, progress: importedProgress } = imported;
+      // Create a fresh plan for this user (strip old id/user_id/timestamps)
+      const newPlan = await createPlan({
+        name: importedPlan.name,
+        goal: importedPlan.goal,
+        race_type: importedPlan.race_type,
+        target_elevation_m: importedPlan.target_elevation_m,
+        current_weekly_km: importedPlan.current_weekly_km,
+        race_date: importedPlan.race_date,
+        volume_increase_pct: importedPlan.volume_increase_pct,
+        options: importedPlan.options,
+        weeks: importedPlan.weeks,
+        status: importedPlan.status,
       });
+      await importPlanProgress(newPlan.id, importedProgress);
+      navigate(`/plans/${newPlan.id}`);
     };
     input.click();
-  }, [updateProgress]);
+  }, [navigate]);
 
   if (loading) {
     return (
@@ -115,7 +134,7 @@ export function PlanViewPage() {
           linkedFileEnabled={false}
           supportsLinkedFile={false}
           onLinkSaveFile={() => {}}
-          onExportJson={() => {}}
+          onExportJson={handleExportJson}
           onImportJson={handleImportJson}
           onBack={() => navigate("/dashboard")}
         />
