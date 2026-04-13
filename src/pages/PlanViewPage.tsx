@@ -4,6 +4,7 @@ import { Box, HStack, Text } from "@chakra-ui/react";
 import { parseISO, isWithinInterval, addDays } from "date-fns";
 import type { PlanWeek } from "../data/types";
 import { getExtraRunKey, DEFAULT_PROGRESS } from "../lib/utils";
+import { importProgressFile } from "../lib/storage";
 import { usePlanData } from "../hooks/usePlanData";
 import { Header } from "../components/Header";
 import { WeekCard } from "../components/WeekCard";
@@ -49,6 +50,22 @@ export function PlanViewPage() {
     },
     [updateProgress]
   );
+
+  const handleImportJson = useCallback(() => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json,.json";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const imported = await importProgressFile(file);
+      if (!imported) return;
+      Object.entries(imported).forEach(([key, value]) => {
+        updateProgress(key, value);
+      });
+    };
+    input.click();
+  }, [updateProgress]);
 
   if (loading) {
     return (
@@ -99,7 +116,7 @@ export function PlanViewPage() {
           supportsLinkedFile={false}
           onLinkSaveFile={() => {}}
           onExportJson={() => {}}
-          onImportJson={() => {}}
+          onImportJson={handleImportJson}
           onBack={() => navigate("/dashboard")}
         />
 
