@@ -4,8 +4,7 @@ import { Box, HStack, Text } from "@chakra-ui/react";
 import { parseISO, isWithinInterval, addDays } from "date-fns";
 import type { PlanWeek } from "../data/types";
 import { getExtraRunKey, DEFAULT_PROGRESS } from "../lib/utils";
-import { exportPlanJson, importPlanJson } from "../lib/storage";
-import { createPlan, importPlanProgress } from "../lib/supabaseStorage";
+import { exportPlanJson } from "../lib/storage";
 import { usePlanData } from "../hooks/usePlanData";
 import { Header } from "../components/Header";
 import { WeekCard } from "../components/WeekCard";
@@ -57,34 +56,6 @@ export function PlanViewPage() {
     exportPlanJson(plan, progress);
   }, [plan, progress]);
 
-  const handleImportJson = useCallback(() => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "application/json,.json";
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      const imported = await importPlanJson(file);
-      if (!imported) return;
-      const { plan: importedPlan, progress: importedProgress } = imported;
-      // Create a fresh plan for this user (strip old id/user_id/timestamps)
-      const newPlan = await createPlan({
-        name: importedPlan.name,
-        goal: importedPlan.goal,
-        race_type: importedPlan.race_type,
-        target_elevation_m: importedPlan.target_elevation_m,
-        current_weekly_km: importedPlan.current_weekly_km,
-        race_date: importedPlan.race_date,
-        volume_increase_pct: importedPlan.volume_increase_pct,
-        options: importedPlan.options,
-        weeks: importedPlan.weeks,
-        status: importedPlan.status,
-      });
-      await importPlanProgress(newPlan.id, importedProgress);
-      navigate(`/plans/${newPlan.id}`);
-    };
-    input.click();
-  }, [navigate]);
 
   if (loading) {
     return (
@@ -135,7 +106,6 @@ export function PlanViewPage() {
           supportsLinkedFile={false}
           onLinkSaveFile={() => {}}
           onExportJson={handleExportJson}
-          onImportJson={handleImportJson}
           onBack={() => navigate("/dashboard")}
         />
 

@@ -7,7 +7,6 @@ import { DEFAULT_PROGRESS, getExtraRunKey } from "../lib/utils";
 import {
   downloadProgressFile,
   hasLinkedProgressFile,
-  importProgressFile,
   linkProgressFile,
   loadLinkedProgress,
   loadProgress,
@@ -105,18 +104,6 @@ export function DemoPage() {
     downloadProgressFile(progress);
   }, [progress]);
 
-  const handleImportJson = useCallback(() => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "application/json,.json";
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      const imported = await importProgressFile(file);
-      if (imported) setProgress(imported);
-    };
-    input.click();
-  }, []);
 
   const week = TRAINING_PLAN[selectedWeek];
 
@@ -134,7 +121,6 @@ export function DemoPage() {
           supportsLinkedFile={supportsLinkedFile}
           onLinkSaveFile={handleLinkSaveFile}
           onExportJson={handleExportJson}
-          onImportJson={handleImportJson}
         />
 
         <ProgressChart

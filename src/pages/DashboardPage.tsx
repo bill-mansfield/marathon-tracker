@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Box, Flex, Text } from "@chakra-ui/react";
 import type { TrainingPlan } from "../data/types";
-import { fetchUserPlans, deletePlan } from "../lib/supabaseStorage";
+import { fetchUserPlans, deletePlan, createPlan, importPlanProgress } from "../lib/supabaseStorage";
+import { importPlanJson } from "../lib/storage";
 import { useAuth } from "../hooks/useAuth";
 import { PlanCard } from "../components/PlanCard";
 import { useColorMode } from "../hooks/useColorMode";
@@ -40,6 +41,34 @@ export function DashboardPage() {
     []
   );
 
+  const handleImportPlan = useCallback(() => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json,.json";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const imported = await importPlanJson(file);
+      if (!imported) return;
+      const { plan: importedPlan, progress: importedProgress } = imported;
+      const newPlan = await createPlan({
+        name: importedPlan.name,
+        goal: importedPlan.goal,
+        race_type: importedPlan.race_type,
+        target_elevation_m: importedPlan.target_elevation_m,
+        current_weekly_km: importedPlan.current_weekly_km,
+        race_date: importedPlan.race_date,
+        volume_increase_pct: importedPlan.volume_increase_pct,
+        options: importedPlan.options,
+        weeks: importedPlan.weeks,
+        status: importedPlan.status,
+      });
+      await importPlanProgress(newPlan.id, importedProgress);
+      navigate(`/plans/${newPlan.id}`);
+    };
+    input.click();
+  }, [navigate]);
+
   const inProgress = plans.filter((p) => p.status === "in_progress");
   const drafts = plans.filter((p) => p.status === "draft");
   const completed = plans.filter((p) => p.status === "completed");
@@ -69,6 +98,23 @@ export function DashboardPage() {
             </Text>
           </Box>
           <Flex gap={2} align="center">
+            <Box
+              as="button"
+              onClick={handleImportPlan}
+              fontSize="13px"
+              fontWeight="700"
+              px={4}
+              py="9px"
+              borderRadius="md"
+              border="1px solid"
+              borderColor="border.subtle"
+              bg="bg.card"
+              color="text.primary"
+              cursor="pointer"
+              _hover={{ borderColor: COLORS.emerald, color: COLORS.emerald }}
+            >
+              Import plan
+            </Box>
             <Box
               as="button"
               onClick={() => navigate("/plans/new")}
