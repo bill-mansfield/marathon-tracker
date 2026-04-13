@@ -256,7 +256,7 @@ export function generatePlan(config: PlanGeneratorConfig): PlanWeek[] {
 function generateWeekDays(
   wp: WeekPlan,
   weekIdx: number,
-  totalWeeks: number,
+  _totalWeeks: number,
   config: PlanGeneratorConfig,
   params: GoalParams,
   phaseContext: PhaseContext
