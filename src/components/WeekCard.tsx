@@ -1,9 +1,15 @@
 import { Box, Flex, Grid, Text, HStack } from "@chakra-ui/react";
 import { format, addDays, parseISO } from "date-fns";
-import type { PlanWeek, ProgressMap, RunProgress } from "../data/types";
+import type { DayName, PlanWeek, ProgressMap, RunProgress } from "../data/types";
 import { DayCell } from "./DayCell";
 import { COLORS } from "../theme";
-import { getWeekActualKm, getRunnableDays, getCompletedCount } from "../lib/utils";
+import {
+  DEFAULT_PROGRESS,
+  getExtraRunsForDay,
+  getProgressKey,
+  getRunTotals,
+  getWeekActualKm,
+} from "../lib/utils";
 
 // Simplified to 4 phase colours
 function getPhaseColor(weekType: string): string {
@@ -21,6 +27,8 @@ interface WeekCardProps {
   weekIndex: number;
   progress: ProgressMap;
   onUpdate: (key: string, patch: Partial<RunProgress>) => void;
+  onAddRun: (day: DayName) => void;
+  onRemoveRun: (key: string) => void;
   isCurrentWeek: boolean;
 }
 
@@ -29,14 +37,15 @@ export function WeekCard({
   weekIndex,
   progress,
   onUpdate,
+  onAddRun,
+  onRemoveRun,
   isCurrentWeek,
 }: WeekCardProps) {
   const start = parseISO(week.weekStart);
   const end = addDays(start, 6);
   const dateRange = `${format(start, "d MMM")} – ${format(end, "d MMM")}`;
 
-  const runnableDays = getRunnableDays(week);
-  const completedCount = getCompletedCount(week, weekIndex, progress);
+  const runTotals = getRunTotals(week, weekIndex, progress);
   const actualKm = getWeekActualKm(week, weekIndex, progress);
   const phaseColor = getPhaseColor(week.weekType);
 
@@ -84,7 +93,7 @@ export function WeekCard({
                 : `${week.totalKm}km`}
             </Text>
             <Text fontSize="11px" color="text.faint">
-              {completedCount}/{runnableDays.length} runs
+              {runTotals.completed}/{runTotals.total} runs
             </Text>
           </HStack>
         </Flex>
@@ -102,22 +111,84 @@ export function WeekCard({
           mb={week.notes || week.longRunPlan ? 3 : 0}
         >
           {week.days.map((day) => {
-            const key = `${weekIndex}-${day.day}`;
+            const key = getProgressKey(weekIndex, day.day);
+            const plannedProgress = progress[key] ?? DEFAULT_PROGRESS;
+            const extras = getExtraRunsForDay(weekIndex, day.day, progress);
             return (
-              <DayCell
-                key={key}
-                planDay={day}
-                progress={
-                  progress[key] ?? {
-                    completed: false,
-                    rating: 0,
-                    note: "",
-                    stravaUrl: "",
-                    actualKm: null,
-                  }
-                }
-                onUpdate={(patch) => onUpdate(key, patch)}
-              />
+              <Flex key={key} direction="column" gap={2}>
+                {plannedProgress.deleted ? (
+                  <Box
+                    borderRadius="md"
+                    border="1px dashed"
+                    borderColor="border.subtle"
+                    bg="bg.muted"
+                    color="text.muted"
+                    px={3}
+                    py={2}
+                  >
+                    <HStack justify="space-between" gap={2}>
+                      <Text fontSize="11px">
+                        {day.day} run deleted
+                      </Text>
+                      <Box
+                        as="button"
+                        onClick={() => onUpdate(key, { deleted: false })}
+                        fontSize="11px"
+                        fontWeight="700"
+                        color={COLORS.emerald}
+                        background="none"
+                        border="none"
+                        cursor="pointer"
+                      >
+                        Undo
+                      </Box>
+                    </HStack>
+                  </Box>
+                ) : (
+                  <DayCell
+                    planDay={day}
+                    progress={plannedProgress}
+                    onUpdate={(patch) => onUpdate(key, patch)}
+                    onRemove={() =>
+                      onUpdate(key, {
+                        completed: false,
+                        deleted: true,
+                      })
+                    }
+                    removeLabel="Delete"
+                  />
+                )}
+                {extras.map(([extraKey, extra]) => (
+                  <DayCell
+                    key={extraKey}
+                    planDay={{
+                      day: day.day,
+                      km: extra.actualKm ?? 0,
+                      description: extra.description ?? "Extra run",
+                    }}
+                    progress={extra}
+                    onUpdate={(patch) => onUpdate(extraKey, patch)}
+                    onRemove={() => onRemoveRun(extraKey)}
+                    removeLabel="Delete"
+                  />
+                ))}
+                <Box
+                  as="button"
+                  onClick={() => onAddRun(day.day)}
+                  borderRadius="md"
+                  border="1px dashed"
+                  borderColor="border.subtle"
+                  bg="bg.muted"
+                  color="text.muted"
+                  py={2}
+                  px={2}
+                  fontSize="11px"
+                  fontWeight="600"
+                  _hover={{ color: "text.primary", borderColor: COLORS.emerald }}
+                >
+                  + Add run
+                </Box>
+              </Flex>
             );
           })}
         </Grid>

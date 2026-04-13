@@ -1,12 +1,10 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { format, parseISO } from "date-fns";
-import type { ProgressMap } from "../data/types";
-import { TRAINING_PLAN } from "../data/trainingPlan";
+import type { PlanWeek, ProgressMap } from "../data/types";
 import {
+  getRunTotals,
   getWeekActualKm,
-  getRunnableDays,
-  getCompletedCount,
 } from "../lib/utils";
 import { COLORS } from "../theme";
 
@@ -22,6 +20,7 @@ function getPhaseColor(weekType: string): string {
 }
 
 interface WeekTimelineProps {
+  weeks: PlanWeek[];
   progress: ProgressMap;
   selectedWeek: number;
   currentWeek: number;
@@ -29,6 +28,7 @@ interface WeekTimelineProps {
 }
 
 export function WeekTimeline({
+  weeks,
   progress,
   selectedWeek,
   currentWeek,
@@ -124,12 +124,13 @@ export function WeekTimeline({
           },
         }}
       >
-        {TRAINING_PLAN.map((week, i) => {
-          const runnable = getRunnableDays(week);
-          const completed = getCompletedCount(week, i, progress);
+        {weeks.map((week, i) => {
+          const runTotals = getRunTotals(week, i, progress);
           const actualKm = getWeekActualKm(week, i, progress);
           const fillPct =
-            runnable.length > 0 ? (completed / runnable.length) * 100 : 0;
+            runTotals.total > 0
+              ? (runTotals.completed / runTotals.total) * 100
+              : 0;
           const isSelected = i === selectedWeek;
           const isCurrent = i === currentWeek;
           const phaseColor = getPhaseColor(week.weekType);

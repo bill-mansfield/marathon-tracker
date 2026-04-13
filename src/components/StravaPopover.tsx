@@ -14,10 +14,6 @@ export function StravaPopover({ url, onSave }: StravaPopoverProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (open) setDraft(url);
-  }, [open, url]);
-
-  useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -50,7 +46,10 @@ export function StravaPopover({ url, onSave }: StravaPopoverProps) {
             cursor="pointer"
             opacity={0.4}
             _hover={{ opacity: 0.7 }}
-            onClick={() => setOpen(!open)}
+            onClick={() => {
+              if (!open) setDraft(url);
+              setOpen(!open);
+            }}
             background="none"
             border="none"
             padding="0"
@@ -66,7 +65,10 @@ export function StravaPopover({ url, onSave }: StravaPopoverProps) {
         <Box
           as="button"
           aria-label="Link Strava"
-          onClick={() => setOpen(!open)}
+          onClick={() => {
+            if (!open) setDraft(url);
+            setOpen(!open);
+          }}
           _hover={{ opacity: 0.7 }}
           background="none"
           border="none"
