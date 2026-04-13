@@ -1,4 +1,4 @@
-import type { ProgressMap } from "../data/types";
+import type { ProgressMap, TrainingPlan } from "../data/types";
 
 declare global {
   interface FileSystemHandlePermissionDescriptor {
@@ -43,6 +43,18 @@ const FILE_HANDLE_KEY = "progress-json-handle";
 interface ProgressFilePayload {
   version: 1;
   savedAt: string;
+  progress: ProgressMap;
+}
+
+interface PlanFilePayload {
+  version: 2;
+  savedAt: string;
+  plan: TrainingPlan;
+  progress: ProgressMap;
+}
+
+export interface ImportedPlan {
+  plan: TrainingPlan;
   progress: ProgressMap;
 }
 
@@ -224,6 +236,44 @@ export function importProgressFile(file: File): Promise<ProgressMap | null> {
     reader.onload = () => {
       const raw = typeof reader.result === "string" ? reader.result : "";
       resolve(parsePayload(raw));
+    };
+    reader.readAsText(file);
+  });
+}
+
+export function exportPlanJson(plan: TrainingPlan, progress: ProgressMap): void {
+  const payload: PlanFilePayload = {
+    version: 2,
+    savedAt: new Date().toISOString(),
+    plan,
+    progress,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  const safeName = plan.name.replace(/[^a-z0-9]/gi, "-").toLowerCase();
+  link.download = `${safeName}-plan.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+export function importPlanJson(file: File): Promise<ImportedPlan | null> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onerror = () => resolve(null);
+    reader.onload = () => {
+      try {
+        const raw = typeof reader.result === "string" ? reader.result : "";
+        const parsed = JSON.parse(raw) as Partial<PlanFilePayload>;
+        if (parsed.version === 2 && parsed.plan && parsed.progress !== undefined) {
+          resolve({ plan: parsed.plan, progress: parsed.progress });
+        } else {
+          resolve(null);
+        }
+      } catch {
+        resolve(null);
+      }
     };
     reader.readAsText(file);
   });

@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import type { TrainingPlan, PlanWeek, PlanGeneratorOptions, GoalDistance, RaceType, PlanStatus } from "../data/types";
+import type { TrainingPlan, PlanWeek, PlanGeneratorOptions, GoalDistance, RaceType, PlanStatus, ProgressMap } from "../data/types";
 
 export async function fetchUserPlans(): Promise<TrainingPlan[]> {
   if (!supabase) return [];
@@ -69,5 +69,19 @@ export async function renamePlan(
     .from("plans")
     .update({ name, updated_at: new Date().toISOString() })
     .eq("id", planId);
+  if (error) throw new Error(error.message);
+}
+
+export async function importPlanProgress(planId: string, progress: ProgressMap): Promise<void> {
+  if (!supabase) return;
+  const rows = Object.entries(progress).map(([day_key, progress_data]) => ({
+    plan_id: planId,
+    day_key,
+    progress_data,
+  }));
+  if (rows.length === 0) return;
+  const { error } = await supabase
+    .from("progress")
+    .upsert(rows, { onConflict: "plan_id,day_key" });
   if (error) throw new Error(error.message);
 }
