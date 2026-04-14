@@ -100,19 +100,16 @@ interface PhaseContext {
 // --- Phase-based run day count ---
 
 function getRunDayCount(phase: Phase, weekType: string, goal: GoalDistance): number {
-  const isUltra = goal === "50k" || goal === "100k";
   const isShort = goal === "5k" || goal === "10k";
 
   if (phase === "Base") return 3;
 
   if (phase === "Build") {
-    if (isUltra) return 6;
     if (isShort) return 4;
-    return 5;
+    return 5; // max 5 runs (2 rest days: MON after long, FRI before long)
   }
 
   if (phase === "Specific") {
-    if (isUltra) return 6;
     if (isShort) return 4;
     return 5;
   }
