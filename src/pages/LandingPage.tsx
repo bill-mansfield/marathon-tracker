@@ -25,7 +25,7 @@ export function LandingPage() {
         {/* Nav */}
         <Flex justify="space-between" align="center" pt={6} pb={2}>
           <Text fontSize="14px" fontWeight="800" letterSpacing="-0.02em">
-            RunPlan
+            BuildWeeks
           </Text>
           <Flex gap={2} align="center">
             <Box
@@ -121,7 +121,7 @@ export function LandingPage() {
             lineHeight="1.5"
             mb={8}
           >
-            Tell RunPlan your goal and where you&apos;re starting from. Get a structured,
+            Tell BuildWeeks your goal and where you&apos;re starting from. Get a structured,
             week-by-week training plan in seconds — with Strava sync built in.
           </Text>
           <Flex gap={3} justify="center" flexWrap="wrap">
