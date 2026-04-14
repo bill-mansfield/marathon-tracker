@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Box, HStack, Text } from "@chakra-ui/react";
 import { parseISO, isWithinInterval, addDays } from "date-fns";
@@ -11,6 +11,7 @@ import { WeekCard } from "../components/WeekCard";
 import { WeekTimeline } from "../components/WeekTimeline";
 import { ProgressChart } from "../components/ProgressChart";
 import { useColorMode } from "../hooks/useColorMode";
+import { getStravaProfile, syncStravaActivities } from "../lib/stravaSync";
 
 function getCurrentWeekIndex(weeks: PlanWeek[]): number {
   const now = new Date();
@@ -30,6 +31,31 @@ export function PlanViewPage() {
 
   const currentWeek = getCurrentWeekIndex(weeks);
   const [selectedWeek, setSelectedWeek] = useState(currentWeek);
+  const [stravaConnected, setStravaConnected] = useState(false);
+  const [syncingStrava, setSyncingStrava] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    void getStravaProfile().then(({ connected }) => setStravaConnected(connected));
+  }, []);
+
+  const handleSyncStrava = useCallback(async () => {
+    if (!plan) return;
+    setSyncingStrava(true);
+    setSyncMessage(null);
+    try {
+      const { patch, count } = await syncStravaActivities(plan, progress);
+      for (const [key, value] of Object.entries(patch)) {
+        if (value) updateProgress(key, value);
+      }
+      setSyncMessage(count > 0 ? `Synced ${count} run${count === 1 ? "" : "s"} from Strava` : "No new runs to sync");
+    } catch (err) {
+      setSyncMessage(err instanceof Error ? err.message : "Sync failed");
+    } finally {
+      setSyncingStrava(false);
+      setTimeout(() => setSyncMessage(null), 4000);
+    }
+  }, [plan, progress, updateProgress]);
 
   const addRun = useCallback(
     (day: PlanWeek["days"][number]["day"]) => {
@@ -107,7 +133,27 @@ export function PlanViewPage() {
           onLinkSaveFile={() => {}}
           onExportJson={handleExportJson}
           onBack={() => navigate("/dashboard")}
+          stravaConnected={stravaConnected}
+          syncingStrava={syncingStrava}
+          onSyncStrava={() => void handleSyncStrava()}
         />
+        {syncMessage && (
+          <Box
+            mx={4}
+            mb={2}
+            px={4}
+            py={2}
+            borderRadius="md"
+            bg="bg.card"
+            border="1px solid"
+            borderColor="border.subtle"
+            fontSize="12px"
+            fontWeight="600"
+            color="text.muted"
+          >
+            {syncMessage}
+          </Box>
+        )}
 
         <ProgressChart
           weeks={weeks}

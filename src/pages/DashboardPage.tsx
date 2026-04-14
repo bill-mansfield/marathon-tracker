@@ -160,6 +160,19 @@ export function DashboardPage() {
               </Box>
               <Box
                 as="button"
+                onClick={() => navigate("/settings")}
+                fontSize="12px"
+                fontWeight="600"
+                color="text.muted"
+                background="none"
+                border="none"
+                cursor="pointer"
+                _hover={{ color: "text.primary" }}
+              >
+                Settings
+              </Box>
+              <Box
+                as="button"
                 onClick={async () => {
                   await signOut();
                   navigate("/");
