@@ -44,11 +44,19 @@ export function PlanViewPage() {
     setSyncingStrava(true);
     setSyncMessage(null);
     try {
-      const { patch, count } = await syncStravaActivities(plan, progress);
+      const { patch, count, extrasAdded } = await syncStravaActivities(plan, progress);
       for (const [key, value] of Object.entries(patch)) {
         if (value) updateProgress(key, value);
       }
-      setSyncMessage(count > 0 ? `Synced ${count} run${count === 1 ? "" : "s"} from Strava` : "No new runs to sync");
+      const total = count + extrasAdded;
+      let msg = "No new runs to sync";
+      if (total > 0) {
+        const parts = [];
+        if (count > 0) parts.push(`${count} planned run${count === 1 ? "" : "s"}`);
+        if (extrasAdded > 0) parts.push(`${extrasAdded} extra${extrasAdded === 1 ? "" : "s"}`);
+        msg = `Synced ${parts.join(" + ")} from Strava`;
+      }
+      setSyncMessage(msg);
     } catch (err) {
       setSyncMessage(err instanceof Error ? err.message : "Sync failed");
     } finally {

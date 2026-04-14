@@ -14,7 +14,7 @@ serve(async (req: Request) => {
   try {
     const clientId = Deno.env.get("STRAVA_CLIENT_ID");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
     if (!clientId) {
       return new Response(JSON.stringify({ error: "STRAVA_CLIENT_ID not configured" }), {
@@ -23,7 +23,6 @@ serve(async (req: Request) => {
       });
     }
 
-    // Verify the user's JWT and get their ID
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Missing authorization" }), {
@@ -32,9 +31,11 @@ serve(async (req: Request) => {
       });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const jwt = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(jwt);
+    // Use anon key + user's JWT in headers — the correct Supabase edge function auth pattern
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Invalid token" }), {
