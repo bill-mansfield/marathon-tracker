@@ -8,14 +8,17 @@ import type {
 } from "../data/types";
 
 // --- Goal-specific parameters ---
+// Peak weekly km and long run caps derived from reference programs:
+//   Marathon ref: ~58km peak, 28km long run (28/58 = 48%)
+//   100km ref:    ~90km peak, 38km long run (38/90 = 42%)
 
 interface GoalParams {
   minWeeks: number;
   maxWeeks: number;
   peakWeeklyKm: number;
-  longRunCap: number; // max long run in km
-  longRunPct: number; // target long run as fraction of weekly volume
-  taperWeeks: number; // minimum taper weeks
+  longRunCap: number;  // max long run in km
+  longRunPct: number;  // target long run as fraction of weekly volume
+  taperWeeks: number;
   raceDistanceKm: number;
 }
 
@@ -23,25 +26,27 @@ const GOAL_PARAMS: Record<GoalDistance, GoalParams> = {
   "5k":      { minWeeks: 8,  maxWeeks: 12, peakWeeklyKm: 30,  longRunCap: 10, longRunPct: 0.30, taperWeeks: 1, raceDistanceKm: 5 },
   "10k":     { minWeeks: 10, maxWeeks: 16, peakWeeklyKm: 40,  longRunCap: 16, longRunPct: 0.35, taperWeeks: 1, raceDistanceKm: 10 },
   "half":    { minWeeks: 14, maxWeeks: 20, peakWeeklyKm: 50,  longRunCap: 24, longRunPct: 0.44, taperWeeks: 2, raceDistanceKm: 21.1 },
-  "marathon": { minWeeks: 18, maxWeeks: 26, peakWeeklyKm: 58, longRunCap: 34, longRunPct: 0.48, taperWeeks: 3, raceDistanceKm: 42.2 },
+  "marathon":{ minWeeks: 18, maxWeeks: 26, peakWeeklyKm: 58,  longRunCap: 34, longRunPct: 0.48, taperWeeks: 3, raceDistanceKm: 42.2 },
   "50k":     { minWeeks: 20, maxWeeks: 30, peakWeeklyKm: 75,  longRunCap: 45, longRunPct: 0.48, taperWeeks: 3, raceDistanceKm: 50 },
   "100k":    { minWeeks: 24, maxWeeks: 36, peakWeeklyKm: 90,  longRunCap: 55, longRunPct: 0.50, taperWeeks: 3, raceDistanceKm: 100 },
 };
 
 // --- Session role constants (derived from reference program analysis) ---
+// Reference programs show: one "easy/decreasing" run starts high and falls to 0,
+// while a "quality" session stays constant (~6km for marathon throughout).
 
-// Km for the constant "quality" session (WED slot) — stays ~constant throughout
+// Constant "quality" session km (WED slot) — barely varies in reference programs
 const QUALITY_SESSION_KM: Record<GoalDistance, number> = {
   "5k": 4, "10k": 5, "half": 6, "marathon": 6, "50k": 8, "100k": 10,
 };
 
-// Km for the short "recovery" run (SAT slot, before SUN long run)
+// Short "recovery" run (SAT slot, last easy run before SUN long)
 const RECOVERY_SESSION_KM: Record<GoalDistance, number> = {
   "5k": 3, "10k": 4, "half": 5, "marathon": 5, "50k": 6, "100k": 8,
 };
 
-// Starting km for the "decreasing easy run" (TUE/MON slot) — drops linearly to 1km by race
-// Both marathon and 100km reference programs start this at 11km
+// Starting km for the "decreasing easy run" (TUE slot) — drops linearly to 1km by end of taper.
+// Both marathon and 100km references start this at ~11km and reduce by ~1km/week.
 const DECREASING_RUN_START: Record<GoalDistance, number> = {
   "5k": 5, "10k": 6, "half": 8, "marathon": 11, "50k": 11, "100k": 12,
 };
@@ -55,6 +60,14 @@ interface WeekPlan {
   weekType: string;
   targetKm: number;
   isDeload: boolean;
+}
+
+// Phase boundary counts — passed into day generation so long run can progress properly
+interface PhaseContext {
+  baseWeeks: number;
+  buildWeeks: number;
+  specificWeeks: number;
+  taperWeeks: number;
 }
 
 // --- Description templates ---
@@ -88,41 +101,29 @@ function strengthDesc(): string {
   return "Strength training (30-45min)";
 }
 
-// --- Phase context for passing phase boundaries into day generation ---
-
-interface PhaseContext {
-  baseWeeks: number;
-  buildWeeks: number;
-  specificWeeks: number;
-  taperWeeks: number;
-}
-
 // --- Phase-based run day count ---
+// Max 5 running days per week to always enforce 2 rest days:
+//   MON = rest (after SUN long run)
+//   FRI = rest (day before SAT short/easy + SUN long)
 
 function getRunDayCount(phase: Phase, weekType: string, goal: GoalDistance): number {
-  const isUltra = goal === "50k" || goal === "100k";
   const isShort = goal === "5k" || goal === "10k";
 
   if (phase === "Base") return 3;
 
   if (phase === "Build") {
-    if (isUltra) return 6;
     if (isShort) return 4;
-    return 5;
+    return 5; // marathon, half, 50k, 100k
   }
 
   if (phase === "Specific") {
-    if (isUltra) return 6;
     if (isShort) return 4;
     return 5;
   }
 
   if (phase === "Taper") {
-    const isShortGoal = goal === "5k" || goal === "10k";
-    if (isShortGoal) {
-      return weekType === "Taper" ? 3 : 4;
-    }
-    // marathon+: maintain frequency through taper — only distances drop
+    if (isShort) return weekType === "Taper" ? 3 : 4;
+    // marathon+: maintain frequency through taper — volume drops, not days
     if (weekType === "Winding Down") return 5;
     if (weekType === "Early Taper") return 4;
     return 4;
@@ -132,13 +133,14 @@ function getRunDayCount(phase: Phase, weekType: string, goal: GoalDistance): num
 }
 
 // --- Day-spacing lookup: indices into MON(0)..SAT(5), SUN(6) reserved for long run ---
+// All 5-run patterns use [1,2,3,5] = TUE,WED,THU,SAT giving MON+FRI as rest days.
+// SAT (last slot) is always a short/easy recovery run before the SUN long.
 
 const MIDWEEK_DAY_SELECTIONS: Record<number, number[]> = {
-  1: [3],                  // THU                        R R R T R R LR
-  2: [1, 3],               // TUE, THU                   R T R T R R LR  (base: 3 total)
-  3: [1, 2, 5],            // TUE, WED, SAT              R T W R R S LR  (taper: 4 total)
-  4: [1, 2, 3, 5],         // TUE, WED, THU, SAT         R T W T R S LR  (build/specific: 5 total)
-  5: [0, 2, 3, 4, 5],      // MON, WED, THU, FRI, SAT    M R W T F S LR  (ultra: 6 total)
+  1: [3],             // THU only
+  2: [1, 3],          // TUE, THU              (base: 3 total, MON/WED/FRI/SAT rest)
+  3: [1, 2, 5],       // TUE, WED, SAT         (taper 4 total: MON/THU/FRI rest)
+  4: [1, 2, 3, 5],    // TUE, WED, THU, SAT    (build/specific 5 total: MON+FRI rest ✓)
 };
 
 // --- Main generator ---
@@ -153,12 +155,11 @@ export function generatePlan(config: PlanGeneratorConfig): PlanWeek[] {
   let totalWeeks = Math.floor((raceDate.getTime() - now.getTime()) / msPerWeek);
   totalWeeks = Math.max(params.minWeeks, Math.min(params.maxWeeks, totalWeeks));
 
-  // Allocate phases
+  // Allocate phases — base gets more time for longer plans
   const taperWeeks = params.taperWeeks;
   const raceWeek = 1;
   const trainingWeeks = totalWeeks - taperWeeks - raceWeek;
 
-  // Base gets more time for longer plans
   let basePct: number;
   if (totalWeeks <= 14) basePct = 0.35;
   else if (totalWeeks <= 22) basePct = 0.45;
@@ -174,7 +175,7 @@ export function generatePlan(config: PlanGeneratorConfig): PlanWeek[] {
   const increaseFactor = 1 + config.volumeIncreasePct / 100;
   let weeksSinceDeload = 0;
 
-  // Helper to add a week
+  // Helper to add a week — saves pre-deload km so deloads don't compound
   function addWeek(phase: Phase, weekType: string, isDeload: boolean) {
     const preDeloadKm = currentKm;
     if (isDeload && config.options.deloads) {
@@ -185,7 +186,7 @@ export function generatePlan(config: PlanGeneratorConfig): PlanWeek[] {
     if (!isDeload) {
       currentKm *= increaseFactor;
     } else {
-      // Resume progression from the pre-deload level — deload only affects that one week
+      // Resume progression from pre-deload level — deload only affects that one week
       currentKm = preDeloadKm * increaseFactor;
     }
     weeksSinceDeload = isDeload ? 0 : weeksSinceDeload + 1;
@@ -308,17 +309,17 @@ function generateWeekDays(
     let progressiveCap: number;
     if (wp.phase === "Base") {
       const baseProgress = baseWeeks > 1 ? weekIdx / (baseWeeks - 1) : 1;
-      progressiveCap = params.longRunCap * (0.40 + 0.15 * baseProgress); // 40% to 55%
+      progressiveCap = params.longRunCap * (0.40 + 0.15 * baseProgress); // 40% → 55%
     } else if (wp.phase === "Build") {
       const buildStart = baseWeeks;
       const buildProgress = buildWeeks > 1 ? (weekIdx - buildStart) / (buildWeeks - 1) : 1;
-      progressiveCap = params.longRunCap * (0.55 + 0.25 * buildProgress); // 55% to 80%
+      progressiveCap = params.longRunCap * (0.55 + 0.25 * buildProgress); // 55% → 80%
     } else if (wp.phase === "Taper") {
       const taperStart = baseWeeks + buildWeeks + specificWeeks;
       const taperProgress = phaseContext.taperWeeks > 1
         ? (weekIdx - taperStart) / (phaseContext.taperWeeks - 1)
         : 1;
-      progressiveCap = params.longRunCap * (0.80 - 0.30 * taperProgress); // 80% down to 50%
+      progressiveCap = params.longRunCap * (0.80 - 0.30 * taperProgress); // 80% → 50%
     } else {
       // Specific/Peak — full cap
       progressiveCap = params.longRunCap;
@@ -331,8 +332,8 @@ function generateWeekDays(
 
   // Pick midweek run day slots using spacing lookup
   const midweekRunCount = runDayCount - (longRunEnabled ? 1 : 0);
-  const clampedCount = Math.max(1, Math.min(5, midweekRunCount));
-  const midweekDayIndices = MIDWEEK_DAY_SELECTIONS[clampedCount] || [1, 3];
+  const clampedCount = Math.max(1, Math.min(4, midweekRunCount));
+  const midweekDayIndices = MIDWEEK_DAY_SELECTIONS[clampedCount] ?? [1, 3];
 
   // Assign km to midweek slots using session roles
   const midweekKms = assignSessionKm(
@@ -340,10 +341,10 @@ function generateWeekDays(
   );
 
   // Session role semantics (matches MIDWEEK_DAY_SELECTIONS slot order):
-  //   slot 0 = DECREASING easy run (TUE/MON)
-  //   slot 1 = QUALITY session (WED)        — only when slotCount >= 3
-  //   slot 2 = MODERATE/BIG run (THU)       — only when slotCount >= 4
-  //   last   = RECOVERY run (SAT)           — only when slotCount >= 4
+  //   slot 0 = DECREASING easy run (TUE) — starts high, falls to 1km by end of taper
+  //   slot 1 = QUALITY session (WED)     — constant km per goal
+  //   slot 2 = MODERATE run (THU)        — absorbs remaining volume
+  //   slot 3 = RECOVERY run (SAT)        — short easy before SUN long
   const lastSlot = midweekDayIndices.length - 1;
 
   const isBase = wp.phase === "Base";
@@ -367,10 +368,8 @@ function generateWeekDays(
         ? easyRunDesc(km, stridesInBase && i === lastSlot)
         : `${km}km run`;
     } else if (i === 0) {
-      // Slot 0: DECREASING easy run (TUE/MON)
-      desc = config.options.easy
-        ? easyRunDesc(km, false)
-        : `${km}km easy`;
+      // Slot 0: DECREASING easy run (TUE)
+      desc = config.options.easy ? easyRunDesc(km, false) : `${km}km easy`;
     } else if (i === 1) {
       // Slot 1: QUALITY session (WED)
       if (config.options.tempo && (isBuild || isSpecific)) {
@@ -381,10 +380,10 @@ function generateWeekDays(
         desc = config.options.easy ? easyRunDesc(km, includeStrides) : `${km}km run`;
       }
     } else if (i === lastSlot && slotCount >= 4) {
-      // Last slot: RECOVERY run (SAT)
+      // Last slot: RECOVERY run (SAT) — always short and easy before Sunday long
       desc = config.options.easy ? easyRunDesc(km, false) : `${km}km recovery`;
     } else {
-      // Middle slots: MODERATE/BIG run (THU, or FRI for ultras)
+      // Middle slots: MODERATE run (THU)
       if (config.options.surges && (isBuild || isSpecific)) {
         desc = surgeRunDesc(km);
       } else if (config.options.elevation && config.raceType === "trail" && (isBuild || isSpecific)) {
@@ -428,7 +427,7 @@ function generateWeekDays(
 }
 
 // Goal-specific race week shakeout distances (from reference program analysis)
-// Marathon reference: TUE=8km easy, WED=8km easy, FRI=6km recovery
+// Marathon reference: TUE=8km easy + strides, WED=8km easy, FRI=6km recovery
 const RACE_WEEK_SHAKEOUTS: Record<GoalDistance, { tue: number; wed: number; fri: number }> = {
   "5k":      { tue: 3, wed: 3, fri: 3 },
   "10k":     { tue: 5, wed: 4, fri: 4 },
@@ -440,14 +439,14 @@ const RACE_WEEK_SHAKEOUTS: Record<GoalDistance, { tue: number; wed: number; fri:
 
 function generateRaceWeek(config: PlanGeneratorConfig, params: GoalParams): PlanDay[] {
   const DAY_NAMES: DayName[] = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
-  const shakeouts = RACE_WEEK_SHAKEOUTS[config.goal];
+  const s = RACE_WEEK_SHAKEOUTS[config.goal];
 
   return DAY_NAMES.map((day) => {
     if (day === "MON") return { day, km: 0, description: "Rest" };
-    if (day === "TUE") return { day, km: shakeouts.tue, description: `${shakeouts.tue}km easy + strides` };
-    if (day === "WED") return { day, km: shakeouts.wed, description: `${shakeouts.wed}km easy` };
+    if (day === "TUE") return { day, km: s.tue, description: `${s.tue}km easy + strides` };
+    if (day === "WED") return { day, km: s.wed, description: `${s.wed}km easy` };
     if (day === "THU") return { day, km: 0, description: "Rest" };
-    if (day === "FRI") return { day, km: shakeouts.fri, description: `${shakeouts.fri}km recovery + strides` };
+    if (day === "FRI") return { day, km: s.fri, description: `${s.fri}km recovery + strides` };
     if (day === "SAT") return { day, km: 0, description: "Rest or 3km shakeout" };
     // SUN — Race day
     return {
@@ -462,7 +461,6 @@ function distributeKm(totalKm: number, count: number): number[] {
   if (count === 0) return [];
   const base = Math.round(totalKm / count);
   const result = Array(count).fill(base);
-  // Adjust first element for rounding
   const sum = result.reduce((a: number, b: number) => a + b, 0);
   result[0] += totalKm - sum;
   return result;
@@ -472,14 +470,15 @@ function distributeKm(totalKm: number, count: number): number[] {
  * Assigns km to midweek run slots using session roles derived from reference programs.
  *
  * Slot ordering matches MIDWEEK_DAY_SELECTIONS:
- *   2 slots [TUE,THU]         → [easy, easy]            simple 40/60 split
+ *   2 slots [TUE,THU]         → [easy, easy]           simple split (base)
  *   3 slots [TUE,WED,SAT]     → [decreasing, quality, moderate]
  *   4 slots [TUE,WED,THU,SAT] → [decreasing, quality, moderate, recovery]
- *   5 slots [MON,WED,THU,FRI,SAT] → [decreasing, quality, big, moderate, recovery]
  *
- * The "decreasing" slot starts at DECREASING_RUN_START[goal] and drops linearly
- * to 1km by end of the build+specific+taper block — matching the -1km/week
- * pattern observed in the marathon and 100km reference programs.
+ * The "decreasing" slot (TUE) starts at DECREASING_RUN_START[goal] and drops linearly
+ * to 1km by end of taper — matching the -1km/week pattern in the reference programs.
+ * The "quality" slot (WED) stays constant at QUALITY_SESSION_KM[goal].
+ * The "moderate" slot (THU) absorbs remaining volume.
+ * The "recovery" slot (SAT) is short and easy — always last before the long run.
  */
 function assignSessionKm(
   remainingKm: number,
@@ -501,13 +500,13 @@ function assignSessionKm(
   }
 
   // Build/Specific/Taper: session-role assignment
-  // Compute how far through the build→taper block we are (0=start of build, 1=end of taper)
+  // Progress 0→1 over the build→taper block
   const buildStart = phaseContext.baseWeeks;
   const totalBuildToEnd = phaseContext.buildWeeks + phaseContext.specificWeeks + phaseContext.taperWeeks;
   const weeksSinceBuild = Math.max(0, weekIdx - buildStart);
   const progress = totalBuildToEnd > 1 ? Math.min(1, weeksSinceBuild / (totalBuildToEnd - 1)) : 0;
 
-  // Slot 0: decreasing easy run — starts high, falls to 1km by end of taper
+  // Slot 0: decreasing easy run — starts high, falls to 1km by end of program
   const decreasingKm = Math.max(1, Math.round(DECREASING_RUN_START[goal] * (1 - progress)));
   const qualityKm = QUALITY_SESSION_KM[goal];
   const leftover = Math.max(0, remainingKm - decreasingKm - qualityKm);
@@ -524,14 +523,6 @@ function assignSessionKm(
     return [decreasingKm, qualityKm, moderateKm, recoveryKm];
   }
 
-  if (slotCount === 5) {
-    // [decreasing, quality, bigSession, moderate, recovery] for ultras
-    const recoveryKm = Math.min(RECOVERY_SESSION_KM[goal], Math.max(3, Math.round(leftover * 0.15)));
-    const moderateKm = Math.min(qualityKm + 2, Math.max(3, Math.round(leftover * 0.25)));
-    const bigKm = Math.max(3, leftover - recoveryKm - moderateKm);
-    return [decreasingKm, qualityKm, bigKm, moderateKm, recoveryKm];
-  }
-
   return distributeKm(remainingKm, slotCount); // fallback
 }
 
@@ -541,22 +532,22 @@ function getWeekNotes(
   _totalWeeks: number,
   config: PlanGeneratorConfig
 ): string {
-  if (wp.phase === "Race Week") return `Race week! Taper and prepare for ${config.goal.toUpperCase()}`;
+  if (wp.phase === "Race Week") return `Race week! Stay relaxed, trust your training for ${config.goal.toUpperCase()}`;
 
   switch (wp.weekType) {
-    case "Cutback": return "Cutback week — recover and absorb training";
-    case "Absorption": return "Recovery week — absorb recent training";
-    case "Base": return weekIdx === 0 ? "First week — keep it easy and build the habit" : "Aerobic base building — all easy Z2";
+    case "Cutback":    return "Cutback week — recover and absorb training";
+    case "Absorption": return "Recovery week — absorb recent training load";
+    case "Base":       return weekIdx === 0 ? "First week — keep it easy and build the habit" : "Aerobic base building — all easy Z2";
     case "Base + Strides": return "Introducing strides at the end of easy runs";
     case "Base Build": return "Building aerobic base with gradual volume increase";
     case "Transition": return "Transitioning from base to structured training";
     case "General Build": return "Introducing structured work — tempo and quality sessions";
-    case "Specific": return "Race-specific training";
-    case "Peak": return "Peak training week — biggest volume";
-    case "Winding Down": return "Beginning to reduce volume";
+    case "Specific":   return "Race-specific training — quality over quantity";
+    case "Peak":       return "Peak training week — biggest volume of the program";
+    case "Winding Down": return "Beginning to reduce volume — maintain sharpness";
     case "Early Taper": return "Reducing volume, maintaining some intensity";
-    case "Taper": return "Final taper — stay fresh for race day";
-    default: return "";
+    case "Taper":      return "Final taper — stay fresh, trust the process";
+    default:           return "";
   }
 }
 
