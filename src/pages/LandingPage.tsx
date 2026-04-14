@@ -109,9 +109,9 @@ export function LandingPage() {
             letterSpacing="-0.03em"
             mb={4}
           >
-            Build your running
+            Your first marathon plan.
             <br />
-            training plan
+            No fluff.
           </Text>
           <Text
             fontSize={{ base: "15px", md: "17px" }}
@@ -121,8 +121,8 @@ export function LandingPage() {
             lineHeight="1.5"
             mb={8}
           >
-            Set a goal, enter your current fitness, and get a periodized training
-            plan generated in seconds. Track your progress week by week.
+            Tell RunPlan your goal and where you&apos;re starting from. Get a structured,
+            week-by-week training plan in seconds — with Strava sync built in.
           </Text>
           <Flex gap={3} justify="center" flexWrap="wrap">
             <Box
@@ -201,9 +201,9 @@ export function LandingPage() {
         {/* Features */}
         <Flex gap={4} flexWrap="wrap" justify="center" mb={12}>
           {[
-            { title: "Auto-generated", desc: "Enter your goal and current fitness. The plan builds itself with proper periodization." },
+            { title: "Auto-generated", desc: "Enter your goal and current fitness. The plan builds itself with proper periodization and progressive overload." },
+            { title: "Syncs with Strava", desc: "Connect Strava and your completed runs auto-fill into the plan. No manual logging." },
             { title: "Fully customizable", desc: "Control volume increase, toggle deload weeks, strides, tempo runs, hill work, and more." },
-            { title: "Track progress", desc: "Mark runs complete, rate them, add notes, and link your Strava activities." },
           ].map((f) => (
             <Box
               key={f.title}
