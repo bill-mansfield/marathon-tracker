@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Box, Flex, Text } from "@chakra-ui/react";
-import type { TrainingPlan } from "../data/types";
-import { fetchUserPlans, deletePlan, createPlan, importPlanProgress } from "../lib/supabaseStorage";
+import type { PlanStatus, TrainingPlan } from "../data/types";
+import { fetchUserPlans, deletePlan, createPlan, importPlanProgress, updatePlanStatus } from "../lib/supabaseStorage";
 import { importPlanJson } from "../lib/storage";
 import { useAuth } from "../hooks/useAuth";
 import { PlanCard } from "../components/PlanCard";
@@ -37,6 +37,14 @@ export function DashboardPage() {
       if (!confirm("Delete this plan? This cannot be undone.")) return;
       await deletePlan(planId);
       setPlans((prev) => prev.filter((p) => p.id !== planId));
+    },
+    []
+  );
+
+  const handleStatusChange = useCallback(
+    async (planId: string, status: PlanStatus) => {
+      await updatePlanStatus(planId, status);
+      setPlans((prev) => prev.map((p) => p.id === planId ? { ...p, status } : p));
     },
     []
   );
@@ -77,27 +85,99 @@ export function DashboardPage() {
     <Box bg="bg.page" minH="100vh" color="text.primary">
       <Box maxW="900px" mx="auto" px={{ base: 3, md: 4 }} pb={8}>
         {/* Header */}
-        <Flex justify="space-between" align="center" pt={6} pb={6}>
-          <Box>
-            <Text
-              fontSize="10px"
-              fontWeight="600"
-              letterSpacing="0.12em"
-              color="text.faint"
-              textTransform="uppercase"
-              mb="2px"
-            >
-              Training Plans
-            </Text>
-            <Text
-              fontSize={{ base: "22px", md: "28px" }}
-              fontWeight="800"
-              letterSpacing="-0.02em"
-            >
-              Dashboard
-            </Text>
-          </Box>
-          <Flex gap={2} align="center">
+        <Box pt={6} pb={6}>
+          <Flex justify="space-between" align="center" mb={{ base: 3, md: 0 }}>
+            <Box>
+              <Text
+                fontSize="10px"
+                fontWeight="600"
+                letterSpacing="0.12em"
+                color="text.faint"
+                textTransform="uppercase"
+                mb="2px"
+              >
+                Training Plans
+              </Text>
+              <Text
+                fontSize={{ base: "22px", md: "28px" }}
+                fontWeight="800"
+                letterSpacing="-0.02em"
+              >
+                Dashboard
+              </Text>
+            </Box>
+            <Flex gap={2} align="center">
+              {/* On desktop: show all actions inline */}
+              <Flex gap={2} align="center" display={{ base: "none", md: "flex" }}>
+                <Box
+                  as="button"
+                  onClick={handleImportPlan}
+                  fontSize="13px"
+                  fontWeight="700"
+                  px={4}
+                  py="9px"
+                  borderRadius="md"
+                  border="1px solid"
+                  borderColor="border.subtle"
+                  bg="bg.card"
+                  color="text.primary"
+                  cursor="pointer"
+                  _hover={{ borderColor: COLORS.emerald, color: COLORS.emerald }}
+                >
+                  Import plan
+                </Box>
+                <Box
+                  as="button"
+                  onClick={() => navigate("/plans/new")}
+                  fontSize="13px"
+                  fontWeight="700"
+                  px={4}
+                  py="9px"
+                  borderRadius="md"
+                  border="none"
+                  bg={COLORS.emerald}
+                  color="white"
+                  cursor="pointer"
+                  _hover={{ opacity: 0.9 }}
+                >
+                  + New plan
+                </Box>
+              </Flex>
+              <Box
+                as="button"
+                onClick={toggle}
+                background="none"
+                border="none"
+                cursor="pointer"
+                p="6px"
+                borderRadius="md"
+                color="text.muted"
+                _hover={{ bg: "bg.muted", color: "text.primary" }}
+                display="flex"
+                alignItems="center"
+              >
+                {colorMode === "light" ? <MoonIcon size={18} /> : <SunIcon size={18} />}
+              </Box>
+              <Box
+                as="button"
+                onClick={async () => {
+                  await signOut();
+                  navigate("/");
+                }}
+                fontSize="12px"
+                fontWeight="600"
+                color="text.muted"
+                background="none"
+                border="none"
+                cursor="pointer"
+                _hover={{ color: "text.primary" }}
+              >
+                Sign out
+              </Box>
+            </Flex>
+          </Flex>
+          {/* On mobile: action buttons on their own row */}
+          <Flex gap={2} display={{ base: "flex", md: "none" }}>
             <Box
               as="button"
               onClick={handleImportPlan}
@@ -111,6 +191,7 @@ export function DashboardPage() {
               bg="bg.card"
               color="text.primary"
               cursor="pointer"
+              flex="1"
               _hover={{ borderColor: COLORS.emerald, color: COLORS.emerald }}
             >
               Import plan
@@ -127,43 +208,13 @@ export function DashboardPage() {
               bg={COLORS.emerald}
               color="white"
               cursor="pointer"
+              flex="1"
               _hover={{ opacity: 0.9 }}
             >
               + New plan
             </Box>
-            <Box
-              as="button"
-              onClick={toggle}
-              background="none"
-              border="none"
-              cursor="pointer"
-              p="6px"
-              borderRadius="md"
-              color="text.muted"
-              _hover={{ bg: "bg.muted", color: "text.primary" }}
-              display="flex"
-              alignItems="center"
-            >
-              {colorMode === "light" ? <MoonIcon size={18} /> : <SunIcon size={18} />}
-            </Box>
-            <Box
-              as="button"
-              onClick={async () => {
-                await signOut();
-                navigate("/");
-              }}
-              fontSize="12px"
-              fontWeight="600"
-              color="text.muted"
-              background="none"
-              border="none"
-              cursor="pointer"
-              _hover={{ color: "text.primary" }}
-            >
-              Sign out
-            </Box>
           </Flex>
-        </Flex>
+        </Box>
 
         {loading ? (
           <Text color="text.muted" textAlign="center" mt={12}>
@@ -215,6 +266,7 @@ export function DashboardPage() {
                       plan={p}
                       onClick={() => navigate(`/plans/${p.id}`)}
                       onDelete={() => void handleDelete(p.id)}
+                      onStatusChange={(status) => void handleStatusChange(p.id, status)}
                     />
                   ))}
                 </Flex>
@@ -233,6 +285,7 @@ export function DashboardPage() {
                       plan={p}
                       onClick={() => navigate(`/plans/${p.id}`)}
                       onDelete={() => void handleDelete(p.id)}
+                      onStatusChange={(status) => void handleStatusChange(p.id, status)}
                     />
                   ))}
                 </Flex>

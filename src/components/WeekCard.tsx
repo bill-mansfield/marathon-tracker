@@ -116,6 +116,17 @@ export function WeekCard({
             const extras = getExtraRunsForDay(weekIndex, day.day, progress);
             return (
               <Flex key={key} direction="column" gap={2}>
+                <Text
+                  display={{ base: "block", lg: "none" }}
+                  fontSize="10px"
+                  fontWeight="700"
+                  color="text.muted"
+                  letterSpacing="0.08em"
+                  textTransform="uppercase"
+                  pt={1}
+                >
+                  {day.day}
+                </Text>
                 {plannedProgress.deleted ? (
                   <Box
                     borderRadius="md"

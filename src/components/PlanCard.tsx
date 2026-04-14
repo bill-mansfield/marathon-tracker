@@ -1,6 +1,6 @@
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { format, parseISO } from "date-fns";
-import type { TrainingPlan } from "../data/types";
+import type { PlanStatus, TrainingPlan } from "../data/types";
 import { StatusBadge } from "./StatusBadge";
 import { COLORS } from "../theme";
 
@@ -17,9 +17,10 @@ interface PlanCardProps {
   plan: TrainingPlan;
   onClick: () => void;
   onDelete?: () => void;
+  onStatusChange?: (status: PlanStatus) => void;
 }
 
-export function PlanCard({ plan, onClick, onDelete }: PlanCardProps) {
+export function PlanCard({ plan, onClick, onDelete, onStatusChange }: PlanCardProps) {
   const totalWeeks = plan.weeks.length;
   const goalLabel = GOAL_LABELS[plan.goal] ?? plan.goal;
 
@@ -34,10 +35,9 @@ export function PlanCard({ plan, onClick, onDelete }: PlanCardProps) {
       onClick={onClick}
       transition="all 0.15s"
       _hover={{ borderColor: COLORS.emerald, transform: "translateY(-1px)" }}
-      position="relative"
     >
-      <Flex justify="space-between" align="start" mb={2}>
-        <Box>
+      <Flex justify="space-between" align="start" mb={2} gap={3}>
+        <Box minW={0}>
           <Text fontSize="16px" fontWeight="700" color="text.primary" lineHeight="1.2">
             {plan.name}
           </Text>
@@ -45,7 +45,26 @@ export function PlanCard({ plan, onClick, onDelete }: PlanCardProps) {
             {goalLabel} {plan.race_type === "trail" ? "(Trail)" : ""}
           </Text>
         </Box>
-        <StatusBadge status={plan.status} />
+        <Flex direction="column" align="end" gap="6px" flexShrink={0}>
+          {onDelete && (
+            <Box
+              as="button"
+              fontSize="11px"
+              color="text.faint"
+              background="none"
+              border="none"
+              cursor="pointer"
+              _hover={{ color: COLORS.red }}
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+            >
+              Delete
+            </Box>
+          )}
+          <StatusBadge status={plan.status} />
+        </Flex>
       </Flex>
 
       <Flex gap={4} mt={3} flexWrap="wrap">
@@ -75,25 +94,52 @@ export function PlanCard({ plan, onClick, onDelete }: PlanCardProps) {
         </Box>
       </Flex>
 
-      {onDelete && (
-        <Box
-          as="button"
-          position="absolute"
-          top="12px"
-          right="12px"
-          fontSize="11px"
-          color="text.faint"
-          background="none"
-          border="none"
-          cursor="pointer"
-          _hover={{ color: COLORS.red }}
-          onClick={(e: React.MouseEvent) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-        >
-          Delete
-        </Box>
+      {onStatusChange && plan.status !== "completed" && (
+        <Flex mt={3} pt={3} borderTop="1px solid" borderColor="border.subtle" justify="end">
+          {plan.status === "draft" && (
+            <Box
+              as="button"
+              fontSize="12px"
+              fontWeight="700"
+              px={3}
+              py="6px"
+              borderRadius="md"
+              bg={COLORS.emerald}
+              color="white"
+              border="none"
+              cursor="pointer"
+              _hover={{ opacity: 0.85 }}
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation();
+                onStatusChange("in_progress");
+              }}
+            >
+              Start plan
+            </Box>
+          )}
+          {plan.status === "in_progress" && (
+            <Box
+              as="button"
+              fontSize="12px"
+              fontWeight="700"
+              px={3}
+              py="6px"
+              borderRadius="md"
+              bg="bg.muted"
+              color="text.muted"
+              border="1px solid"
+              borderColor="border.subtle"
+              cursor="pointer"
+              _hover={{ color: "text.primary" }}
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation();
+                onStatusChange("completed");
+              }}
+            >
+              Mark complete
+            </Box>
+          )}
+        </Flex>
       )}
     </Box>
   );

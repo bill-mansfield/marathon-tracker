@@ -41,6 +41,7 @@ export function DayCell({
         opacity={0.4}
         py={1}
         minH="28px"
+        display={{ base: "none", lg: "flex" }}
       >
         <Text fontSize="10px" fontWeight="600" color="text.faint" letterSpacing="0.03em">
           {planDay.day}
@@ -64,7 +65,7 @@ export function DayCell({
       position="relative"
     >
       <HStack justify="space-between" mb={1}>
-        <Text fontSize="10px" fontWeight="700" color="text.faint" letterSpacing="0.05em">
+        <Text fontSize="10px" fontWeight="700" color="text.faint" letterSpacing="0.05em" display={{ base: "none", lg: "block" }}>
           {planDay.day}
         </Text>
         {editingKm ? (
