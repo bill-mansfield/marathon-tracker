@@ -20,6 +20,7 @@ export interface RunProgress {
   rating: 0 | 1 | 2 | 3;
   note: string;
   stravaUrl: string;
+  stravaActivityId?: number;
   actualKm: number | null; // null = use planned km when completed
   description?: string;
   isExtra?: boolean;
@@ -51,6 +52,7 @@ export interface PlanGeneratorConfig {
   targetElevationM?: number;
   currentWeeklyKm: number;
   raceDate: string; // ISO date
+  startDate?: string; // ISO date — defaults to today if not provided
   volumeIncreasePct: number;
   options: PlanGeneratorOptions;
 }

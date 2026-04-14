@@ -53,6 +53,7 @@ export function PlanCreatorPage() {
     d.setDate(d.getDate() + 16 * 7);
     return d.toISOString().split("T")[0];
   });
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [volumeIncreasePct, setVolumeIncreasePct] = useState(10);
   const [options, setOptions] = useState<PlanGeneratorOptions>(DEFAULT_OPTIONS);
   const [saving, setSaving] = useState(false);
@@ -71,13 +72,14 @@ export function PlanCreatorPage() {
         targetElevationM: raceType === "trail" ? targetElevationM : undefined,
         currentWeeklyKm,
         raceDate,
+        startDate,
         volumeIncreasePct,
         options,
       });
     } catch {
       return [];
     }
-  }, [goal, raceType, targetElevationM, currentWeeklyKm, raceDate, volumeIncreasePct, options]);
+  }, [goal, raceType, targetElevationM, currentWeeklyKm, raceDate, startDate, volumeIncreasePct, options]);
 
   const peakKm = preview.length > 0 ? Math.max(...preview.map((w) => w.totalKm)) : 0;
 
@@ -246,6 +248,23 @@ export function PlanCreatorPage() {
         {/* Details */}
         <Section title="Your details">
           <Flex gap={4} flexWrap="wrap">
+            <Box flex="1" minW="150px">
+              <Text fontSize="12px" fontWeight="600" color="text.muted" mb="4px">
+                Start date
+              </Text>
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                w="100%"
+                size="md"
+                bg="bg.page"
+                borderColor="border.default"
+              />
+              <Text fontSize="10px" color="text.faint" mt="3px">
+                Set in the past if you're already mid-program
+              </Text>
+            </Box>
             <Box flex="1" minW="150px">
               <Text fontSize="12px" fontWeight="600" color="text.muted" mb="4px">
                 Race date

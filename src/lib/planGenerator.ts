@@ -148,7 +148,7 @@ const MIDWEEK_DAY_SELECTIONS: Record<number, number[]> = {
 export function generatePlan(config: PlanGeneratorConfig): PlanWeek[] {
   const params = GOAL_PARAMS[config.goal];
   const raceDate = new Date(config.raceDate);
-  const now = new Date();
+  const now = config.startDate ? new Date(config.startDate) : new Date();
 
   // Calculate available weeks
   const msPerWeek = 7 * 24 * 60 * 60 * 1000;

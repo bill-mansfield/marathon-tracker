@@ -17,6 +17,9 @@ interface HeaderProps {
   onLinkSaveFile: () => void;
   onExportJson: () => void;
   onBack?: () => void;
+  stravaConnected?: boolean;
+  syncingStrava?: boolean;
+  onSyncStrava?: () => void;
 }
 
 export function Header({
@@ -31,6 +34,9 @@ export function Header({
   onLinkSaveFile,
   onExportJson,
   onBack,
+  stravaConnected,
+  syncingStrava,
+  onSyncStrava,
 }: HeaderProps) {
   const raceDate = parseISO(raceDateStr);
   const daysUntilRace = differenceInDays(raceDate, new Date());
@@ -121,6 +127,25 @@ export function Header({
           flexShrink={0}
         >
           <HStack gap={2} flexWrap="wrap" justify="end">
+            {stravaConnected && onSyncStrava && (
+              <Box
+                as="button"
+                onClick={onSyncStrava}
+                fontSize="12px"
+                fontWeight="700"
+                px={3}
+                py={2}
+                borderRadius="full"
+                bg={syncingStrava ? "bg.muted" : "#fc4c02"}
+                color={syncingStrava ? "text.muted" : "white"}
+                border="none"
+                cursor={syncingStrava ? "wait" : "pointer"}
+                opacity={syncingStrava ? 0.7 : 1}
+                _hover={{ opacity: syncingStrava ? 0.7 : 0.9 }}
+              >
+                {syncingStrava ? "Syncing..." : "Sync Strava"}
+              </Box>
+            )}
             {supportsLinkedFile ? (
               <Box
                 as="button"
