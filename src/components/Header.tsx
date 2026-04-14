@@ -153,7 +153,7 @@ export function Header({
               borderColor="border.subtle"
               _hover={{ transform: "translateY(-1px)" }}
             >
-              Export JSON
+              Export plan backup
             </Box>
             <Box
               as="button"
@@ -172,11 +172,6 @@ export function Header({
               {colorMode === "light" ? <MoonIcon size={18} /> : <SunIcon size={18} />}
             </Box>
           </HStack>
-          <Text fontSize="11px" color="text.faint" textAlign="right" maxW="220px">
-            {linkedFileEnabled
-              ? "Updates are also saved to your linked JSON file."
-              : "Local saves stay in this browser. Link or export JSON for backup."}
-          </Text>
         </Flex>
       </Flex>
 
