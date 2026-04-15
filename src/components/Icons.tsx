@@ -28,7 +28,7 @@ export function BuildWeeksLogo({ iconSize = 16, onClick }: { iconSize?: number; 
           <polyline points="16.5,17 21.5,21.5 25,25.5" strokeWidth="2.2"/>
         </g>
       </svg>
-      <span style={{ fontSize: `${fontSize}px`, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1 }}>
+      <span style={{ fontSize: `${fontSize}px`, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1, color: "#059669" }}>
         BuildWeeks
       </span>
     </span>
