@@ -51,27 +51,11 @@ export function NoteIcon({ hasNote, size = 14 }: { hasNote: boolean; size?: numb
 }
 
 export function StravaIcon({ linked, size = 14 }: { linked: boolean; size?: number }) {
-  // Real Strava logo mark: large upward chevron (∧) + small downward chevron (∨)
-  const main = linked ? "#fc4c02" : "#b8ad9e";
-  const secondary = linked ? "#fc8c60" : "#c8c0b4";
+  // Official Strava logo path from Simple Icons (CC0 licence)
+  const color = linked ? "#fc4c02" : "#b8ad9e";
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      {/* Large upward chevron — the "A" */}
-      <polyline
-        points="2,20 12,3 22,20"
-        stroke={main}
-        strokeWidth="3.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {/* Small downward chevron — the "V" */}
-      <polyline
-        points="8,20 12,24 16,20"
-        stroke={secondary}
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+      <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
     </svg>
   );
 }
