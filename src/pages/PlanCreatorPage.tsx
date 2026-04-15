@@ -50,8 +50,8 @@ export function PlanCreatorPage() {
   const [name, setName] = useState("");
   const [goal, setGoal] = useState<GoalDistance>("half");
   const [raceType, setRaceType] = useState<RaceType>("flat");
-  const [targetElevationM, setTargetElevationM] = useState(500);
-  const [currentWeeklyKm, setCurrentWeeklyKm] = useState(15);
+  const [targetElevationM, setTargetElevationM] = useState("500");
+  const [currentWeeklyKm, setCurrentWeeklyKm] = useState("15");
   const [raceDate, setRaceDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 16 * 7);
@@ -60,7 +60,7 @@ export function PlanCreatorPage() {
   const [startDate, setStartDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [volumeIncreasePct, setVolumeIncreasePct] = useState(10);
   const [options, setOptions] = useState<PlanGeneratorOptions>(DEFAULT_OPTIONS);
-  const [customDistanceKm, setCustomDistanceKm] = useState(50);
+  const [customDistanceKm, setCustomDistanceKm] = useState("50");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,11 +74,11 @@ export function PlanCreatorPage() {
       return generatePlan({
         goal,
         raceType,
-        targetElevationM: raceType === "trail" ? targetElevationM : undefined,
-        currentWeeklyKm,
+        targetElevationM: raceType === "trail" ? Number(targetElevationM) || 0 : undefined,
+        currentWeeklyKm: Number(currentWeeklyKm) || 0,
         raceDate,
         startDate,
-        customDistanceKm: goal === "custom" ? customDistanceKm : undefined,
+        customDistanceKm: goal === "custom" ? Number(customDistanceKm) || 0 : undefined,
         volumeIncreasePct,
         options,
       });
@@ -115,11 +115,11 @@ export function PlanCreatorPage() {
         name: name.trim(),
         goal,
         raceType,
-        targetElevationM: raceType === "trail" ? targetElevationM : undefined,
-        currentWeeklyKm,
+        targetElevationM: raceType === "trail" ? Number(targetElevationM) || 0 : undefined,
+        currentWeeklyKm: Number(currentWeeklyKm) || 0,
         raceDate,
         startDate,
-        customDistanceKm: goal === "custom" ? customDistanceKm : undefined,
+        customDistanceKm: goal === "custom" ? Number(customDistanceKm) || 0 : undefined,
         volumeIncreasePct,
         options,
       });
@@ -132,8 +132,8 @@ export function PlanCreatorPage() {
         name: name.trim(),
         goal,
         race_type: raceType,
-        target_elevation_m: raceType === "trail" ? targetElevationM : null,
-        current_weekly_km: currentWeeklyKm,
+        target_elevation_m: raceType === "trail" ? Number(targetElevationM) || 0 : null,
+        current_weekly_km: Number(currentWeeklyKm) || 0,
         race_date: raceDate,
         volume_increase_pct: volumeIncreasePct,
         options,
@@ -153,7 +153,7 @@ export function PlanCreatorPage() {
     setName(tmpl.name);
     setGoal(tmpl.config.goal);
     setRaceType(tmpl.config.raceType);
-    setCurrentWeeklyKm(tmpl.config.currentWeeklyKm);
+    setCurrentWeeklyKm(String(tmpl.config.currentWeeklyKm));
     setRaceDate(tmpl.config.raceDate);
     setVolumeIncreasePct(tmpl.config.volumeIncreasePct);
     setOptions(tmpl.config.options);
@@ -251,7 +251,7 @@ export function PlanCreatorPage() {
               <Input
                 type="number"
                 value={customDistanceKm}
-                onChange={(e) => setCustomDistanceKm(Number(e.target.value))}
+                onChange={(e) => setCustomDistanceKm(e.target.value)}
                 min={1}
                 max={1000}
                 w="140px"
@@ -280,7 +280,7 @@ export function PlanCreatorPage() {
               <Input
                 type="number"
                 value={targetElevationM}
-                onChange={(e) => setTargetElevationM(Number(e.target.value))}
+                onChange={(e) => setTargetElevationM(e.target.value)}
                 min={0}
                 w="140px"
                 size="md"
@@ -332,7 +332,7 @@ export function PlanCreatorPage() {
               <Input
                 type="number"
                 value={currentWeeklyKm}
-                onChange={(e) => setCurrentWeeklyKm(Number(e.target.value))}
+                onChange={(e) => setCurrentWeeklyKm(e.target.value)}
                 min={0}
                 w="100%"
                 size="md"
