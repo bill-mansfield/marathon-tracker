@@ -155,7 +155,7 @@ export function LandingPage() {
             </Box>
             <Box
               as="button"
-              onClick={() => navigate("/demo")}
+              onClick={() => navigate("/plans/new")}
               fontSize="15px"
               fontWeight="600"
               px={6}
