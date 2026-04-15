@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Box, HStack, Text } from "@chakra-ui/react";
 import { parseISO, isWithinInterval, addDays } from "date-fns";
 import type { ProgressMap, RunProgress } from "../data/types";
@@ -31,6 +32,7 @@ function getCurrentWeekIndex(): number {
 }
 
 export function DemoPage() {
+  const navigate = useNavigate();
   const [progress, setProgress] = useState<ProgressMap>(loadProgress);
   const { colorMode, toggle } = useColorMode();
   const currentWeek = getCurrentWeekIndex();
@@ -121,6 +123,7 @@ export function DemoPage() {
           supportsLinkedFile={supportsLinkedFile}
           onLinkSaveFile={handleLinkSaveFile}
           onExportJson={handleExportJson}
+          onBack={() => navigate("/")}
         />
 
         <ProgressChart

@@ -3,7 +3,7 @@ import { differenceInDays, parseISO } from "date-fns";
 import type { PlanWeek, ProgressMap } from "../data/types";
 import { COLORS } from "../theme";
 import { getRunTotals, getWeekActualKm } from "../lib/utils";
-import { SunIcon, MoonIcon } from "./Icons";
+import { SunIcon, MoonIcon, BuildWeeksLogo } from "./Icons";
 
 interface HeaderProps {
   weeks: PlanWeek[];
@@ -78,19 +78,8 @@ export function Header({
       <Flex justify="space-between" align="start" mb={4} gap={4}>
         <Box>
           {onBack && (
-            <Box
-              as="button"
-              onClick={onBack}
-              fontSize="12px"
-              fontWeight="600"
-              color="text.muted"
-              background="none"
-              border="none"
-              cursor="pointer"
-              mb="4px"
-              _hover={{ color: "text.primary" }}
-            >
-              &larr; Dashboard
+            <Box mb="8px" _hover={{ opacity: 0.7 }} transition="opacity 0.15s">
+              <BuildWeeksLogo iconSize={16} onClick={onBack} />
             </Box>
           )}
           <Text

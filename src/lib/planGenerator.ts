@@ -7,6 +7,8 @@ import type {
   GoalDistance,
 } from "../data/types";
 
+type StandardGoalDistance = Exclude<GoalDistance, "custom">;
+
 // --- Goal-specific parameters ---
 // Peak weekly km and long run caps derived from reference programs:
 //   Marathon ref: ~58km peak, 28km long run (28/58 = 48%)
@@ -146,8 +148,8 @@ const MIDWEEK_DAY_SELECTIONS: Record<number, number[]> = {
 
 // --- Custom distance helpers ---
 
-function resolveClosestStandardGoal(distanceKm: number): GoalDistance {
-  const distances: [GoalDistance, number][] = [
+function resolveClosestStandardGoal(distanceKm: number): StandardGoalDistance {
+  const distances: [StandardGoalDistance, number][] = [
     ["5k", 5], ["10k", 10], ["half", 21.1], ["marathon", 42.2], ["50k", 50], ["100k", 100],
   ];
   return distances.reduce((a, b) =>
@@ -176,9 +178,9 @@ function computeCustomGoalParams(distanceKm: number): GoalParams {
 
 export function generatePlan(config: PlanGeneratorConfig): PlanWeek[] {
   const isCustom = config.goal === "custom";
-  const effectiveGoal: GoalDistance = isCustom && config.customDistanceKm
+  const effectiveGoal: StandardGoalDistance = isCustom && config.customDistanceKm
     ? resolveClosestStandardGoal(config.customDistanceKm)
-    : (config.goal as GoalDistance);
+    : (config.goal as StandardGoalDistance);
   const params: GoalParams = isCustom && config.customDistanceKm
     ? computeCustomGoalParams(config.customDistanceKm)
     : GOAL_PARAMS[config.goal as GoalDistance];
