@@ -15,6 +15,7 @@ const GOAL_OPTIONS: { value: GoalDistance; label: string; desc: string }[] = [
   { value: "marathon", label: "Marathon", desc: "42.2km" },
   { value: "50k", label: "50K Ultra", desc: "50km" },
   { value: "100k", label: "100K Ultra", desc: "100km" },
+  { value: "custom" as GoalDistance, label: "Custom", desc: "set your own" },
 ];
 
 const OPTION_LABELS: { key: keyof PlanGeneratorOptions; label: string; desc: string }[] = [
@@ -56,6 +57,7 @@ export function PlanCreatorPage() {
   const [startDate, setStartDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [volumeIncreasePct, setVolumeIncreasePct] = useState(10);
   const [options, setOptions] = useState<PlanGeneratorOptions>(DEFAULT_OPTIONS);
+  const [customDistanceKm, setCustomDistanceKm] = useState(50);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,13 +75,14 @@ export function PlanCreatorPage() {
         currentWeeklyKm,
         raceDate,
         startDate,
+        customDistanceKm: goal === "custom" ? customDistanceKm : undefined,
         volumeIncreasePct,
         options,
       });
     } catch {
       return [];
     }
-  }, [goal, raceType, targetElevationM, currentWeeklyKm, raceDate, startDate, volumeIncreasePct, options]);
+  }, [goal, raceType, targetElevationM, currentWeeklyKm, raceDate, startDate, volumeIncreasePct, options, customDistanceKm]);
 
   const peakKm = preview.length > 0 ? Math.max(...preview.map((w) => w.totalKm)) : 0;
 
@@ -218,6 +221,27 @@ export function PlanCreatorPage() {
               />
             ))}
           </Flex>
+          {goal === "custom" && (
+            <Box mt={3}>
+              <Text fontSize="12px" fontWeight="600" color="text.muted" mb="4px">
+                Race distance (km)
+              </Text>
+              <Input
+                type="number"
+                value={customDistanceKm}
+                onChange={(e) => setCustomDistanceKm(Number(e.target.value))}
+                min={1}
+                max={1000}
+                w="140px"
+                size="md"
+                bg="bg.page"
+                borderColor="border.default"
+              />
+              <Text fontSize="10px" color="text.faint" mt="3px">
+                e.g. 240 for a 240km ultra
+              </Text>
+            </Box>
+          )}
         </Section>
 
         {/* Race type */}

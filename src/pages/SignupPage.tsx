@@ -9,6 +9,7 @@ export function SignupPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -17,6 +18,11 @@ export function SignupPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      setLoading(false);
+      return;
+    }
     const { error: err } = await signUp(email, password);
     setLoading(false);
     if (err) {
@@ -98,6 +104,7 @@ export function SignupPage() {
                 size="md"
                 bg="bg.page"
                 borderColor="border.default"
+                paddingLeft="12px"
               />
             </Box>
 
@@ -114,10 +121,27 @@ export function SignupPage() {
                 size="md"
                 bg="bg.page"
                 borderColor="border.default"
+                paddingLeft="12px"
               />
               <Text fontSize="11px" color="text.faint" mt="2px">
                 Must be at least 6 characters
               </Text>
+            </Box>
+
+            <Box mb={4}>
+              <Text as="label" fontSize="12px" fontWeight="600" color="text.muted" mb="4px" display="block">
+                Confirm password
+              </Text>
+              <Input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                size="md"
+                bg="bg.page"
+                borderColor="border.default"
+                paddingLeft="12px"
+              />
             </Box>
 
             {error && (

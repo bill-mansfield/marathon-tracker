@@ -57,6 +57,7 @@ export function LoginPage() {
                 size="md"
                 bg="bg.page"
                 borderColor="border.default"
+                paddingLeft="12px"
               />
             </Box>
 
@@ -72,6 +73,7 @@ export function LoginPage() {
                 size="md"
                 bg="bg.page"
                 borderColor="border.default"
+                paddingLeft="12px"
               />
             </Box>
 

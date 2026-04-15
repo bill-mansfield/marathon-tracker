@@ -29,6 +29,7 @@ const GOAL_PARAMS: Record<GoalDistance, GoalParams> = {
   "marathon":{ minWeeks: 18, maxWeeks: 26, peakWeeklyKm: 58,  longRunCap: 34, longRunPct: 0.48, taperWeeks: 3, raceDistanceKm: 42.2 },
   "50k":     { minWeeks: 20, maxWeeks: 30, peakWeeklyKm: 75,  longRunCap: 45, longRunPct: 0.48, taperWeeks: 3, raceDistanceKm: 50 },
   "100k":    { minWeeks: 24, maxWeeks: 36, peakWeeklyKm: 90,  longRunCap: 55, longRunPct: 0.50, taperWeeks: 3, raceDistanceKm: 100 },
+  "custom":  { minWeeks: 18, maxWeeks: 26, peakWeeklyKm: 58,  longRunCap: 34, longRunPct: 0.48, taperWeeks: 3, raceDistanceKm: 42.2 },
 };
 
 // --- Session role constants (derived from reference program analysis) ---
@@ -37,18 +38,18 @@ const GOAL_PARAMS: Record<GoalDistance, GoalParams> = {
 
 // Constant "quality" session km (WED slot) — barely varies in reference programs
 const QUALITY_SESSION_KM: Record<GoalDistance, number> = {
-  "5k": 4, "10k": 5, "half": 6, "marathon": 6, "50k": 8, "100k": 10,
+  "5k": 4, "10k": 5, "half": 6, "marathon": 6, "50k": 8, "100k": 10, "custom": 6,
 };
 
 // Short "recovery" run (SAT slot, last easy run before SUN long)
 const RECOVERY_SESSION_KM: Record<GoalDistance, number> = {
-  "5k": 3, "10k": 4, "half": 5, "marathon": 5, "50k": 6, "100k": 8,
+  "5k": 3, "10k": 4, "half": 5, "marathon": 5, "50k": 6, "100k": 8, "custom": 5,
 };
 
 // Starting km for the "decreasing easy run" (TUE slot) — drops linearly to 1km by end of taper.
 // Both marathon and 100km references start this at ~11km and reduce by ~1km/week.
 const DECREASING_RUN_START: Record<GoalDistance, number> = {
-  "5k": 5, "10k": 6, "half": 8, "marathon": 11, "50k": 11, "100k": 12,
+  "5k": 5, "10k": 6, "half": 8, "marathon": 11, "50k": 11, "100k": 12, "custom": 11,
 };
 
 // --- Phase definitions ---
@@ -143,10 +144,47 @@ const MIDWEEK_DAY_SELECTIONS: Record<number, number[]> = {
   4: [1, 2, 3, 5],    // TUE, WED, THU, SAT    (build/specific 5 total: MON+FRI rest ✓)
 };
 
+// --- Custom distance helpers ---
+
+function resolveClosestStandardGoal(distanceKm: number): GoalDistance {
+  const distances: [GoalDistance, number][] = [
+    ["5k", 5], ["10k", 10], ["half", 21.1], ["marathon", 42.2], ["50k", 50], ["100k", 100],
+  ];
+  return distances.reduce((a, b) =>
+    Math.abs(a[1] - distanceKm) <= Math.abs(b[1] - distanceKm) ? a : b
+  )[0];
+}
+
+function computeCustomGoalParams(distanceKm: number): GoalParams {
+  const closest = resolveClosestStandardGoal(distanceKm);
+  const base = GOAL_PARAMS[closest];
+  const ratio = distanceKm / ([5, 10, 21.1, 42.2, 50, 100] as const)[
+    (["5k", "10k", "half", "marathon", "50k", "100k"] as const).indexOf(closest)
+  ];
+  return {
+    minWeeks: Math.max(6, Math.round(base.minWeeks * Math.pow(ratio, 0.35))),
+    maxWeeks: Math.round(base.maxWeeks * Math.pow(ratio, 0.35)),
+    peakWeeklyKm: Math.round(base.peakWeeklyKm * Math.pow(ratio, 0.55)),
+    longRunCap: Math.min(distanceKm * 0.75, Math.round(base.longRunCap * Math.pow(ratio, 0.65))),
+    longRunPct: base.longRunPct,
+    taperWeeks: base.taperWeeks,
+    raceDistanceKm: distanceKm,
+  };
+}
+
 // --- Main generator ---
 
 export function generatePlan(config: PlanGeneratorConfig): PlanWeek[] {
-  const params = GOAL_PARAMS[config.goal];
+  const isCustom = config.goal === "custom";
+  const effectiveGoal: GoalDistance = isCustom && config.customDistanceKm
+    ? resolveClosestStandardGoal(config.customDistanceKm)
+    : (config.goal as GoalDistance);
+  const params: GoalParams = isCustom && config.customDistanceKm
+    ? computeCustomGoalParams(config.customDistanceKm)
+    : GOAL_PARAMS[config.goal as GoalDistance];
+  const effectiveConfig: PlanGeneratorConfig = isCustom
+    ? { ...config, goal: effectiveGoal }
+    : config;
   const raceDate = new Date(config.raceDate);
   const now = config.startDate ? new Date(config.startDate) : new Date();
 
@@ -262,7 +300,7 @@ export function generatePlan(config: PlanGeneratorConfig): PlanWeek[] {
     // Align to Monday
     const monday = addDays(weekStart, -((weekStart.getDay() + 6) % 7));
 
-    const days = generateWeekDays(wp, i, allWeeks, config, params, phaseContext);
+    const days = generateWeekDays(wp, i, allWeeks, effectiveConfig, params, phaseContext, isCustom ? config : undefined);
     const totalKm = days.reduce((s, d) => s + d.km, 0);
 
     weeks.push({
@@ -284,7 +322,8 @@ function generateWeekDays(
   _totalWeeks: number,
   config: PlanGeneratorConfig,
   params: GoalParams,
-  phaseContext: PhaseContext
+  phaseContext: PhaseContext,
+  originalConfig?: PlanGeneratorConfig
 ): PlanDay[] {
   const DAY_NAMES: DayName[] = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
   const R: PlanDay = { day: "MON", km: 0, description: "Rest" };
@@ -292,7 +331,7 @@ function generateWeekDays(
 
   // Race week is special
   if (wp.phase === "Race Week") {
-    return generateRaceWeek(config, params);
+    return generateRaceWeek(config, params, originalConfig);
   }
 
   // Phase-based run day count
@@ -435,9 +474,10 @@ const RACE_WEEK_SHAKEOUTS: Record<GoalDistance, { tue: number; wed: number; fri:
   "marathon":{ tue: 8, wed: 8, fri: 6 },
   "50k":     { tue: 8, wed: 8, fri: 6 },
   "100k":    { tue: 12, wed: 6, fri: 6 },
+  "custom":  { tue: 8, wed: 8, fri: 6 },
 };
 
-function generateRaceWeek(config: PlanGeneratorConfig, params: GoalParams): PlanDay[] {
+function generateRaceWeek(config: PlanGeneratorConfig, params: GoalParams, originalConfig?: PlanGeneratorConfig): PlanDay[] {
   const DAY_NAMES: DayName[] = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
   const s = RACE_WEEK_SHAKEOUTS[config.goal];
 
@@ -449,10 +489,13 @@ function generateRaceWeek(config: PlanGeneratorConfig, params: GoalParams): Plan
     if (day === "FRI") return { day, km: s.fri, description: `${s.fri}km recovery + strides` };
     if (day === "SAT") return { day, km: 0, description: "Rest or 3km shakeout" };
     // SUN — Race day
+    const raceDescription = originalConfig?.goal === "custom" && originalConfig.customDistanceKm
+      ? `RACE DAY — ${originalConfig.customDistanceKm}KM`
+      : `RACE DAY — ${config.goal.toUpperCase()}`;
     return {
       day,
       km: params.raceDistanceKm,
-      description: `RACE DAY — ${config.goal.toUpperCase()}`,
+      description: raceDescription,
     };
   });
 }
@@ -532,7 +575,12 @@ function getWeekNotes(
   _totalWeeks: number,
   config: PlanGeneratorConfig
 ): string {
-  if (wp.phase === "Race Week") return `Race week! Stay relaxed, trust your training for ${config.goal.toUpperCase()}`;
+  if (wp.phase === "Race Week") {
+    const raceLabel = config.goal === "custom" && config.customDistanceKm
+      ? `${config.customDistanceKm}km`
+      : config.goal.toUpperCase();
+    return `Race week! Stay relaxed, trust your training for ${raceLabel}`;
+  }
 
   switch (wp.weekType) {
     case "Cutback":    return "Cutback week — recover and absorb training";
