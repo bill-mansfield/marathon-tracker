@@ -31,7 +31,7 @@ export type ProgressMap = Record<string, RunProgress>;
 
 // --- Multi-plan types ---
 
-export type GoalDistance = "5k" | "10k" | "half" | "marathon" | "50k" | "100k";
+export type GoalDistance = "5k" | "10k" | "half" | "marathon" | "50k" | "100k" | "custom";
 export type RaceType = "flat" | "trail";
 export type PlanStatus = "draft" | "in_progress" | "completed";
 
@@ -53,6 +53,7 @@ export interface PlanGeneratorConfig {
   currentWeeklyKm: number;
   raceDate: string; // ISO date
   startDate?: string; // ISO date — defaults to today if not provided
+  customDistanceKm?: number;
   volumeIncreasePct: number;
   options: PlanGeneratorOptions;
 }

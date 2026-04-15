@@ -2,16 +2,32 @@ import { useNavigate } from "react-router-dom";
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { useAuth } from "../hooks/useAuth";
 import { useColorMode } from "../hooks/useColorMode";
-import { SunIcon, MoonIcon } from "../components/Icons";
+import { SunIcon, MoonIcon, StravaIcon } from "../components/Icons";
 import { COLORS } from "../theme";
 
-const GOAL_CARDS = [
-  { label: "5K", desc: "8-12 weeks" },
-  { label: "10K", desc: "10-16 weeks" },
-  { label: "Half Marathon", desc: "14-20 weeks" },
-  { label: "Marathon", desc: "18-26 weeks" },
-  { label: "50K Ultra", desc: "20-30 weeks" },
-  { label: "100K Ultra", desc: "24-36 weeks" },
+const GOAL_DISTANCES = [
+  { label: "5K", desc: "8–12 weeks" },
+  { label: "10K", desc: "10–16 weeks" },
+  { label: "Half Marathon", desc: "14–20 weeks" },
+  { label: "Marathon", desc: "18–26 weeks" },
+  { label: "50K Ultra", desc: "20–30 weeks" },
+  { label: "100K Ultra", desc: "24–36 weeks" },
+];
+
+const FEATURES = [
+  {
+    title: "Auto-generated",
+    desc: "Enter your goal and current fitness. The plan builds itself with proper periodization and progressive overload.",
+  },
+  {
+    title: "Syncs with Strava",
+    desc: "Connect Strava and your completed runs auto-fill into the plan. No manual logging.",
+    strava: true,
+  },
+  {
+    title: "Fully customizable",
+    desc: "Control volume increase, toggle deload weeks, strides, tempo runs, hill work, and more.",
+  },
 ];
 
 export function LandingPage() {
@@ -77,7 +93,7 @@ export function LandingPage() {
                   cursor="pointer"
                   _hover={{ borderColor: "text.muted" }}
                 >
-                  Sign in
+                  Log in
                 </Box>
                 <Box
                   as="button"
@@ -93,7 +109,7 @@ export function LandingPage() {
                   cursor="pointer"
                   _hover={{ opacity: 0.9 }}
                 >
-                  Get started
+                  Sign up
                 </Box>
               </Flex>
             )}
@@ -110,8 +126,6 @@ export function LandingPage() {
             mb={4}
           >
             Your first marathon plan.
-            <br />
-            No fluff.
           </Text>
           <Text
             fontSize={{ base: "15px", md: "17px" }}
@@ -159,9 +173,15 @@ export function LandingPage() {
               Try the demo
             </Box>
           </Flex>
+          <Flex justify="center" align="center" gap={2} mt={4}>
+            <StravaIcon linked size={16} />
+            <Text fontSize="12px" color="text.muted">
+              Syncs with Strava
+            </Text>
+          </Flex>
         </Box>
 
-        {/* Goal distance cards */}
+        {/* Goal distances */}
         <Box mb={12}>
           <Text
             fontSize="12px"
@@ -174,57 +194,58 @@ export function LandingPage() {
           >
             Plans for every distance
           </Text>
-          <Flex gap={3} flexWrap="wrap" justify="center">
-            {GOAL_CARDS.map((g) => (
-              <Box
+          <Box maxW="480px" mx="auto">
+            {GOAL_DISTANCES.map((g) => (
+              <Flex
                 key={g.label}
-                bg="bg.card"
-                border="1px solid"
+                justify="space-between"
+                align="baseline"
+                py="10px"
+                borderBottom="1px solid"
                 borderColor="border.subtle"
-                borderRadius="lg"
-                px={5}
-                py={4}
-                minW="130px"
-                textAlign="center"
               >
-                <Text fontSize="18px" fontWeight="800" letterSpacing="-0.02em">
+                <Text fontSize="16px" fontWeight="700">
                   {g.label}
                 </Text>
-                <Text fontSize="11px" color="text.muted" mt="2px">
+                <Text fontSize="12px" color="text.faint">
                   {g.desc}
                 </Text>
-              </Box>
+              </Flex>
             ))}
-          </Flex>
+          </Box>
         </Box>
 
         {/* Features */}
-        <Flex gap={4} flexWrap="wrap" justify="center" mb={12}>
-          {[
-            { title: "Auto-generated", desc: "Enter your goal and current fitness. The plan builds itself with proper periodization and progressive overload." },
-            { title: "Syncs with Strava", desc: "Connect Strava and your completed runs auto-fill into the plan. No manual logging." },
-            { title: "Fully customizable", desc: "Control volume increase, toggle deload weeks, strides, tempo runs, hill work, and more." },
-          ].map((f) => (
-            <Box
-              key={f.title}
-              flex="1"
-              minW="220px"
-              maxW="280px"
-              bg="bg.card"
-              border="1px solid"
-              borderColor="border.subtle"
-              borderRadius="lg"
-              p={5}
-            >
-              <Text fontSize="14px" fontWeight="700" mb={1}>
-                {f.title}
+        <Box maxW="520px" mx="auto" mb={12}>
+          {FEATURES.map((f, i) => (
+            <Flex key={f.title} gap={5} mb={8} align="flex-start">
+              <Text
+                fontSize="11px"
+                fontWeight="700"
+                color="text.faint"
+                minW="28px"
+                pt="2px"
+              >
+                {String(i + 1).padStart(2, "0")}
               </Text>
-              <Text fontSize="12px" color="text.muted" lineHeight="1.5">
-                {f.desc}
-              </Text>
-            </Box>
+              <Box>
+                {f.strava ? (
+                  <Flex align="center" gap={2} fontSize="15px" fontWeight="700" mb="4px">
+                    <Text fontSize="15px" fontWeight="700">{f.title}</Text>
+                    <StravaIcon linked size={14} />
+                  </Flex>
+                ) : (
+                  <Text fontSize="15px" fontWeight="700" mb="4px">
+                    {f.title}
+                  </Text>
+                )}
+                <Text fontSize="13px" color="text.muted" lineHeight="1.6">
+                  {f.desc}
+                </Text>
+              </Box>
+            </Flex>
           ))}
-        </Flex>
+        </Box>
       </Box>
     </Box>
   );
