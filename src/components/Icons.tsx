@@ -4,6 +4,37 @@ interface IconProps {
   className?: string;
 }
 
+export function BuildWeeksLogo({ iconSize = 16, onClick }: { iconSize?: number; onClick?: () => void }) {
+  const fontSize = Math.round(iconSize * 0.875);
+  return (
+    <span
+      onClick={onClick}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "6px",
+        cursor: onClick ? "pointer" : "default",
+        textDecoration: "none",
+      }}
+    >
+      <svg width={iconSize} height={iconSize} viewBox="0 0 32 32" style={{ display: "block", flexShrink: 0 }}>
+        <rect width="32" height="32" rx="7" fill="#059669"/>
+        <g fill="none" stroke="white" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="22" cy="6.5" r="2.6" fill="white" stroke="none"/>
+          <line x1="20.5" y1="9.5" x2="16.5" y2="17" strokeWidth="2.4"/>
+          <polyline points="19,12.5 14.5,9.5 13,11.5" strokeWidth="2"/>
+          <line x1="19" y1="12.5" x2="23.5" y2="15.5" strokeWidth="2"/>
+          <polyline points="16.5,17 12,21.5 14,27" strokeWidth="2.2"/>
+          <polyline points="16.5,17 21.5,21.5 25,25.5" strokeWidth="2.2"/>
+        </g>
+      </svg>
+      <span style={{ fontSize: `${fontSize}px`, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1 }}>
+        BuildWeeks
+      </span>
+    </span>
+  );
+}
+
 export function CheckIcon({ size = 16, color = "currentColor" }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

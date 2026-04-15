@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { useAuth } from "../hooks/useAuth";
 import { useColorMode } from "../hooks/useColorMode";
-import { SunIcon, MoonIcon, StravaIcon } from "../components/Icons";
+import { SunIcon, MoonIcon, StravaIcon, BuildWeeksLogo } from "../components/Icons";
 import { COLORS } from "../theme";
 
 const GOAL_DISTANCES = [
@@ -40,9 +40,7 @@ export function LandingPage() {
       <Box maxW="800px" mx="auto" px={{ base: 3, md: 4 }} pb={12}>
         {/* Nav */}
         <Flex justify="space-between" align="center" pt={6} pb={2}>
-          <Text fontSize="14px" fontWeight="800" letterSpacing="-0.02em">
-            BuildWeeks
-          </Text>
+          <BuildWeeksLogo iconSize={18} />
           <Flex gap={2} align="center">
             <Box
               as="button"
