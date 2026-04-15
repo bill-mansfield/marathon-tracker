@@ -2,6 +2,9 @@ import { useState } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { Box, Text, Flex, Input } from "@chakra-ui/react";
 import { useAuth } from "../hooks/useAuth";
+import { loadGuestPlan, clearGuestPlan } from "../lib/storage";
+import { createPlan } from "../lib/supabaseStorage";
+import { generatePlan } from "../lib/planGenerator";
 import { COLORS } from "../theme";
 
 export function LoginPage() {
@@ -21,7 +24,32 @@ export function LoginPage() {
     if (err) {
       setError(err);
     } else {
-      navigate("/dashboard");
+      const draft = loadGuestPlan();
+      if (draft) {
+        try {
+          const { name, ...config } = draft;
+          const weeks = generatePlan(config);
+          const plan = await createPlan({
+            name,
+            goal: config.goal,
+            race_type: config.raceType,
+            target_elevation_m: config.raceType === "trail" ? (config.targetElevationM ?? null) : null,
+            current_weekly_km: config.currentWeeklyKm,
+            race_date: config.raceDate,
+            volume_increase_pct: config.volumeIncreasePct,
+            options: config.options,
+            weeks,
+            status: "draft",
+          });
+          clearGuestPlan();
+          navigate(`/plans/${plan.id}`);
+        } catch {
+          clearGuestPlan();
+          navigate("/dashboard");
+        }
+      } else {
+        navigate("/dashboard");
+      }
     }
   }
 

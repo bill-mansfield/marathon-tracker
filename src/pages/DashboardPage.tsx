@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Box, Flex, Text } from "@chakra-ui/react";
 import type { PlanStatus, TrainingPlan } from "../data/types";
 import { fetchUserPlans, deletePlan, createPlan, importPlanProgress, updatePlanStatus } from "../lib/supabaseStorage";
-import { importPlanJson } from "../lib/storage";
+import { importPlanJson, loadGuestPlan, clearGuestPlan } from "../lib/storage";
+import { generatePlan } from "../lib/planGenerator";
 import { useAuth } from "../hooks/useAuth";
 import { PlanCard } from "../components/PlanCard";
 import { useColorMode } from "../hooks/useColorMode";
@@ -31,6 +32,35 @@ export function DashboardPage() {
   useEffect(() => {
     void loadPlans();
   }, [loadPlans]);
+
+  // Fallback: pick up a guest plan draft saved before email-verification login
+  useEffect(() => {
+    const draft = loadGuestPlan();
+    if (!draft) return;
+    const { name, ...config } = draft;
+    void (async () => {
+      try {
+        const weeks = generatePlan(config);
+        const plan = await createPlan({
+          name,
+          goal: config.goal,
+          race_type: config.raceType,
+          target_elevation_m: config.raceType === "trail" ? (config.targetElevationM ?? null) : null,
+          current_weekly_km: config.currentWeeklyKm,
+          race_date: config.raceDate,
+          volume_increase_pct: config.volumeIncreasePct,
+          options: config.options,
+          weeks,
+          status: "draft",
+        });
+        clearGuestPlan();
+        navigate(`/plans/${plan.id}`);
+      } catch {
+        clearGuestPlan(); // don't retry on error
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleDelete = useCallback(
     async (planId: string) => {

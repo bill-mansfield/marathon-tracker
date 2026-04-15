@@ -27,14 +27,7 @@ function App() {
               </AuthGuard>
             }
           />
-          <Route
-            path="/plans/new"
-            element={
-              <AuthGuard>
-                <PlanCreatorPage />
-              </AuthGuard>
-            }
-          />
+          <Route path="/plans/new" element={<PlanCreatorPage />} />
           <Route
             path="/plans/:planId"
             element={

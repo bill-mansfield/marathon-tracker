@@ -4,6 +4,8 @@ import { Box, Flex, Text, Input } from "@chakra-ui/react";
 import type { GoalDistance, RaceType, PlanGeneratorOptions } from "../data/types";
 import { generatePlan, EXAMPLE_PLANS } from "../lib/planGenerator";
 import { createPlan } from "../lib/supabaseStorage";
+import { saveGuestPlan } from "../lib/storage";
+import { useAuth } from "../hooks/useAuth";
 import { useColorMode } from "../hooks/useColorMode";
 import { SunIcon, MoonIcon } from "../components/Icons";
 import { COLORS } from "../theme";
@@ -42,6 +44,7 @@ const DEFAULT_OPTIONS: PlanGeneratorOptions = {
 
 export function PlanCreatorPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { colorMode, toggle } = useColorMode();
 
   const [name, setName] = useState("");
@@ -105,6 +108,25 @@ export function PlanCreatorPage() {
 
     setError(null);
     setSaving(true);
+
+    // Not logged in — save draft to localStorage and send to signup
+    if (!user) {
+      saveGuestPlan({
+        name: name.trim(),
+        goal,
+        raceType,
+        targetElevationM: raceType === "trail" ? targetElevationM : undefined,
+        currentWeeklyKm,
+        raceDate,
+        startDate,
+        customDistanceKm: goal === "custom" ? customDistanceKm : undefined,
+        volumeIncreasePct,
+        options,
+      });
+      navigate("/signup");
+      return;
+    }
+
     try {
       const plan = await createPlan({
         name: name.trim(),
@@ -145,7 +167,7 @@ export function PlanCreatorPage() {
           <Box>
             <Box
               as="button"
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate(user ? "/dashboard" : "/")}
               fontSize="12px"
               fontWeight="600"
               color="text.muted"
@@ -155,7 +177,7 @@ export function PlanCreatorPage() {
               mb="4px"
               _hover={{ color: "text.primary" }}
             >
-              &larr; Dashboard
+              {user ? "← Dashboard" : "← Back"}
             </Box>
             <Text fontSize="22px" fontWeight="800" letterSpacing="-0.02em">
               Create a plan
@@ -449,6 +471,12 @@ export function PlanCreatorPage() {
           >
             {saving ? "Creating..." : `Create ${preview.length}-week plan`}
           </Box>
+
+          {!user && (
+            <Text fontSize="12px" color="text.faint" textAlign="center" mt={3}>
+              You&apos;ll need a free account to save — we&apos;ll keep your plan while you sign up.
+            </Text>
+          )}
         </Section>
       </Box>
     </Box>
