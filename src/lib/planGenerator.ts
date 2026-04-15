@@ -376,16 +376,14 @@ function generateWeekDays(
   const clampedCount = Math.max(1, Math.min(4, midweekRunCount));
   const midweekDayIndices = MIDWEEK_DAY_SELECTIONS[clampedCount] ?? [1, 3];
 
-  // Assign km to midweek slots using session roles
+  // Assign km to midweek slots — sizes derived from long run ratios, not weekly remainder
   const midweekKms = assignSessionKm(
-    remainingKm, midweekDayIndices.length, wp.phase, config.goal, weekIdx, phaseContext
+    remainingKm, midweekDayIndices.length, wp.phase, config.goal, weekIdx, phaseContext, longRunKm
   );
 
   // Session role semantics (matches MIDWEEK_DAY_SELECTIONS slot order):
-  //   slot 0 = DECREASING easy run (TUE) — starts high, falls to 1km by end of taper
-  //   slot 1 = QUALITY session (WED)     — constant km per goal
-  //   slot 2 = MODERATE run (THU)        — absorbs remaining volume
-  //   slot 3 = RECOVERY run (SAT)        — short easy before SUN long
+  //   3 slots: [TUE=moderate ~65% long run, WED=quality constant, SAT=recovery ~30% long run]
+  //   4 slots: [TUE=decreasing, WED=quality constant, THU=moderate ~65% long run, SAT=recovery ~30%]
   const lastSlot = midweekDayIndices.length - 1;
 
   const isBase = wp.phase === "Base";
@@ -420,7 +418,7 @@ function generateWeekDays(
       } else {
         desc = config.options.easy ? easyRunDesc(km, includeStrides) : `${km}km run`;
       }
-    } else if (i === lastSlot && slotCount >= 4) {
+    } else if (i === lastSlot && slotCount >= 3) {
       // Last slot: RECOVERY run (SAT) — always short and easy before Sunday long
       desc = config.options.easy ? easyRunDesc(km, false) : `${km}km recovery`;
     } else {
@@ -438,6 +436,15 @@ function generateWeekDays(
 
     days[dayIdx] = { day: DAY_NAMES[dayIdx], km, description: desc };
   });
+
+  // Hard constraint: no midweek run should exceed the long run (long run is always the longest)
+  if (longRunKm > 0) {
+    midweekDayIndices.forEach((dayIdx) => {
+      if (days[dayIdx].km > longRunKm) {
+        days[dayIdx] = { ...days[dayIdx], km: longRunKm };
+      }
+    });
+  }
 
   // Place long run on Sunday
   if (longRunEnabled && longRunKm > 0) {
@@ -489,7 +496,7 @@ function generateRaceWeek(config: PlanGeneratorConfig, params: GoalParams, origi
     if (day === "WED") return { day, km: s.wed, description: `${s.wed}km easy` };
     if (day === "THU") return { day, km: 0, description: "Rest" };
     if (day === "FRI") return { day, km: s.fri, description: `${s.fri}km recovery + strides` };
-    if (day === "SAT") return { day, km: 0, description: "Rest or 3km shakeout" };
+    if (day === "SAT") return { day, km: 3, description: "3km shakeout (optional)" };
     // SUN — Race day
     const raceDescription = originalConfig?.goal === "custom" && originalConfig.customDistanceKm
       ? `RACE DAY — ${originalConfig.customDistanceKm}KM`
@@ -512,63 +519,73 @@ function distributeKm(totalKm: number, count: number): number[] {
 }
 
 /**
- * Assigns km to midweek run slots using session roles derived from reference programs.
+ * Assigns km to midweek run slots using session roles anchored to the long run.
+ *
+ * Session sizes are derived as ratios of the long run — NOT from leftover weekly volume.
+ * This ensures runs stay proportional regardless of total weekly km targets.
  *
  * Slot ordering matches MIDWEEK_DAY_SELECTIONS:
- *   2 slots [TUE,THU]         → [easy, easy]           simple split (base)
- *   3 slots [TUE,WED,SAT]     → [decreasing, quality, moderate]
+ *   2 slots [TUE,THU]         → [easy, easy]            base phase
+ *   3 slots [TUE,WED,SAT]     → [moderate, quality, recovery]
  *   4 slots [TUE,WED,THU,SAT] → [decreasing, quality, moderate, recovery]
  *
- * The "decreasing" slot (TUE) starts at DECREASING_RUN_START[goal] and drops linearly
- * to 1km by end of taper — matching the -1km/week pattern in the reference programs.
- * The "quality" slot (WED) stays constant at QUALITY_SESSION_KM[goal].
- * The "moderate" slot (THU) absorbs remaining volume.
- * The "recovery" slot (SAT) is short and easy — always last before the long run.
+ * Ratios (of longRunKm):
+ *   moderate  ≈ 65%   — medium effort, never exceeds long run
+ *   recovery  ≈ 30%   — short easy, day before long run
+ *   quality   — constant km per goal, uncapped (always small)
+ *   decreasing— starts at DECREASING_RUN_START[goal], falls to 1km by end of taper
  */
 function assignSessionKm(
-  remainingKm: number,
+  _remainingKm: number,
   slotCount: number,
   phase: Phase,
   goal: GoalDistance,
   weekIdx: number,
-  phaseContext: PhaseContext
+  phaseContext: PhaseContext,
+  longRunKm: number
 ): number[] {
   if (slotCount === 0) return [];
-  if (slotCount === 1) return [remainingKm];
+  if (slotCount === 1) return [Math.max(3, longRunKm > 0 ? Math.round(longRunKm * 0.65) : _remainingKm)];
 
-  // Base phase or 2-slot weeks: simple proportional split
+  // Base phase or 2-slot weeks: simple easy runs anchored to long run
   if (phase === "Base" || slotCount === 2) {
-    const a = Math.max(3, Math.round(remainingKm * 0.4));
+    const easyKm = longRunKm > 0
+      ? Math.max(3, Math.round(longRunKm * 0.45))
+      : Math.max(3, Math.round(_remainingKm * 0.5));
     return slotCount === 2
-      ? [a, Math.max(3, remainingKm - a)]
-      : distributeKm(remainingKm, slotCount);
+      ? [easyKm, easyKm]
+      : distributeKm(longRunKm > 0 ? easyKm * slotCount : _remainingKm, slotCount);
   }
 
-  // Build/Specific/Taper: session-role assignment
-  // Progress 0→1 over the build→taper block
-  const buildStart = phaseContext.baseWeeks;
-  const totalBuildToEnd = phaseContext.buildWeeks + phaseContext.specificWeeks + phaseContext.taperWeeks;
-  const weeksSinceBuild = Math.max(0, weekIdx - buildStart);
-  const progress = totalBuildToEnd > 1 ? Math.min(1, weeksSinceBuild / (totalBuildToEnd - 1)) : 0;
-
-  // Slot 0: decreasing easy run — starts high, falls to 1km by end of program
-  const decreasingKm = Math.max(1, Math.round(DECREASING_RUN_START[goal] * (1 - progress)));
+  // Build/Specific/Taper: session-role assignment anchored to long run
   const qualityKm = QUALITY_SESSION_KM[goal];
-  const leftover = Math.max(0, remainingKm - decreasingKm - qualityKm);
+
+  // Recovery (SAT): ~30% of long run, capped at RECOVERY_SESSION_KM per goal
+  const recoveryKm = longRunKm > 0
+    ? Math.min(RECOVERY_SESSION_KM[goal], Math.max(3, Math.round(longRunKm * 0.30)))
+    : RECOVERY_SESSION_KM[goal];
+
+  // Moderate (TUE in 3-slot / THU in 4-slot): ~65% of long run
+  const moderateKm = longRunKm > 0
+    ? Math.max(3, Math.round(longRunKm * 0.65))
+    : Math.max(3, _remainingKm - qualityKm - recoveryKm);
 
   if (slotCount === 3) {
-    // [decreasing, quality, moderate]
-    return [decreasingKm, qualityKm, Math.max(3, leftover)];
+    // [TUE=moderate, WED=quality, SAT=recovery]
+    return [moderateKm, qualityKm, recoveryKm];
   }
 
   if (slotCount === 4) {
-    // [decreasing, quality, moderate, recovery]
-    const recoveryKm = Math.min(RECOVERY_SESSION_KM[goal], Math.max(3, Math.round(leftover * 0.30)));
-    const moderateKm = Math.max(3, leftover - recoveryKm);
+    // [TUE=decreasing, WED=quality, THU=moderate, SAT=recovery]
+    const buildStart = phaseContext.baseWeeks;
+    const totalBuildToEnd = phaseContext.buildWeeks + phaseContext.specificWeeks + phaseContext.taperWeeks;
+    const weeksSinceBuild = Math.max(0, weekIdx - buildStart);
+    const progress = totalBuildToEnd > 1 ? Math.min(1, weeksSinceBuild / (totalBuildToEnd - 1)) : 0;
+    const decreasingKm = Math.max(1, Math.round(DECREASING_RUN_START[goal] * (1 - progress)));
     return [decreasingKm, qualityKm, moderateKm, recoveryKm];
   }
 
-  return distributeKm(remainingKm, slotCount); // fallback
+  return distributeKm(_remainingKm, slotCount); // fallback
 }
 
 function getWeekNotes(
