@@ -174,7 +174,7 @@ export function SignupPage() {
           </Text>
 
           <Text fontSize="12px" color="text.faint" mt={3} textAlign="center">
-            <RouterLink to="/demo" style={{ textDecoration: "underline" }}>
+            <RouterLink to="/plans/new" style={{ textDecoration: "underline" }}>
               Try the demo
             </RouterLink>{" "}
             without an account
