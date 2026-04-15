@@ -420,7 +420,7 @@ function generateWeekDays(
       } else {
         desc = config.options.easy ? easyRunDesc(km, includeStrides) : `${km}km run`;
       }
-    } else if (i === lastSlot && slotCount >= 4) {
+    } else if (i === lastSlot && slotCount >= 3) {
       // Last slot: RECOVERY run (SAT) — always short and easy before Sunday long
       desc = config.options.easy ? easyRunDesc(km, false) : `${km}km recovery`;
     } else {
@@ -438,6 +438,15 @@ function generateWeekDays(
 
     days[dayIdx] = { day: DAY_NAMES[dayIdx], km, description: desc };
   });
+
+  // Hard constraint: no midweek run should exceed the long run (long run is always the longest)
+  if (longRunKm > 0) {
+    midweekDayIndices.forEach((dayIdx) => {
+      if (days[dayIdx].km > longRunKm) {
+        days[dayIdx] = { ...days[dayIdx], km: longRunKm };
+      }
+    });
+  }
 
   // Place long run on Sunday
   if (longRunEnabled && longRunKm > 0) {
@@ -489,7 +498,7 @@ function generateRaceWeek(config: PlanGeneratorConfig, params: GoalParams, origi
     if (day === "WED") return { day, km: s.wed, description: `${s.wed}km easy` };
     if (day === "THU") return { day, km: 0, description: "Rest" };
     if (day === "FRI") return { day, km: s.fri, description: `${s.fri}km recovery + strides` };
-    if (day === "SAT") return { day, km: 0, description: "Rest or 3km shakeout" };
+    if (day === "SAT") return { day, km: 3, description: "3km shakeout (optional)" };
     // SUN — Race day
     const raceDescription = originalConfig?.goal === "custom" && originalConfig.customDistanceKm
       ? `RACE DAY — ${originalConfig.customDistanceKm}KM`
@@ -557,8 +566,10 @@ function assignSessionKm(
   const leftover = Math.max(0, remainingKm - decreasingKm - qualityKm);
 
   if (slotCount === 3) {
-    // [decreasing, quality, moderate]
-    return [decreasingKm, qualityKm, Math.max(3, leftover)];
+    // [TUE=moderate, WED=quality, SAT=recovery] — SAT is always pre-long-run, keep it short
+    const recoveryKm = Math.min(RECOVERY_SESSION_KM[goal], Math.max(3, Math.round(leftover * 0.30)));
+    const moderateKm = Math.max(3, leftover - recoveryKm);
+    return [moderateKm, qualityKm, recoveryKm];
   }
 
   if (slotCount === 4) {
