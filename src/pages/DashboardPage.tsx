@@ -7,7 +7,7 @@ import { importPlanJson } from "../lib/storage";
 import { useAuth } from "../hooks/useAuth";
 import { PlanCard } from "../components/PlanCard";
 import { useColorMode } from "../hooks/useColorMode";
-import { SunIcon, MoonIcon } from "../components/Icons";
+import { SunIcon, MoonIcon, BuildWeeksLogo } from "../components/Icons";
 import { COLORS } from "../theme";
 
 export function DashboardPage() {
@@ -88,6 +88,9 @@ export function DashboardPage() {
         <Box pt={6} pb={6}>
           <Flex justify="space-between" align="center" mb={{ base: 3, md: 0 }}>
             <Box>
+              <Box mb={2}>
+                <BuildWeeksLogo iconSize={18} />
+              </Box>
               <Text
                 fontSize="10px"
                 fontWeight="600"
