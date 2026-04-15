@@ -123,7 +123,7 @@ export function LandingPage() {
             letterSpacing="-0.03em"
             mb={4}
           >
-            Your first marathon plan.
+            The easiest marathon planner
           </Text>
           <Text
             fontSize={{ base: "15px", md: "17px" }}

@@ -107,7 +107,7 @@ export function DashboardPage() {
               </Text>
             </Box>
             <Flex gap={2} align="center">
-              {/* On desktop: show all actions inline */}
+              {/* On desktop: show import + new plan inline */}
               <Flex gap={2} align="center" display={{ base: "none", md: "flex" }}>
                 <Box
                   as="button"
@@ -143,6 +143,7 @@ export function DashboardPage() {
                   + New plan
                 </Box>
               </Flex>
+              {/* Always visible */}
               <Box
                 as="button"
                 onClick={toggle}
@@ -167,6 +168,7 @@ export function DashboardPage() {
                 background="none"
                 border="none"
                 cursor="pointer"
+                whiteSpace="nowrap"
                 _hover={{ color: "text.primary" }}
               >
                 Settings
@@ -183,6 +185,7 @@ export function DashboardPage() {
                 background="none"
                 border="none"
                 cursor="pointer"
+                whiteSpace="nowrap"
                 _hover={{ color: "text.primary" }}
               >
                 Sign out
