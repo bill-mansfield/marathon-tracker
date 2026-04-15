@@ -48,6 +48,19 @@ const RECOVERY_SESSION_KM: Record<GoalDistance, number> = {
   "5k": 3, "10k": 4, "half": 5, "marathon": 5, "50k": 6, "100k": 8, "custom": 5,
 };
 
+// Moderate run ratio (% of long run) — smaller for longer races where the long run is huge.
+// Marathon ref peak: THU 8km / SUN 28km = ~29%. Specific: THU 10km / SUN 24km = ~42%.
+// Moderate run ratio (% of long run) — smaller for longer races where the long run is huge.
+// Marathon ref peak: THU 8km / SUN 28km ≈ 29%. Specific: THU 10km / SUN 24km ≈ 42%.
+const MODERATE_RUN_RATIO: Record<GoalDistance, number> = {
+  "5k": 0.60, "10k": 0.60, "half": 0.50, "marathon": 0.32, "50k": 0.28, "100k": 0.24, "custom": 0.32,
+};
+
+// Hard cap on moderate run km — prevents unreasonable sessions even at high volume
+const MODERATE_RUN_MAX: Record<GoalDistance, number> = {
+  "5k": 7, "10k": 9, "half": 12, "marathon": 10, "50k": 12, "100k": 14, "custom": 10,
+};
+
 // Starting km for the "decreasing easy run" (TUE slot) — drops linearly to 1km by end of taper.
 // Both marathon and 100km references start this at ~11km and reduce by ~1km/week.
 const DECREASING_RUN_START: Record<GoalDistance, number> = {
@@ -565,9 +578,10 @@ function assignSessionKm(
     ? Math.min(RECOVERY_SESSION_KM[goal], Math.max(3, Math.round(longRunKm * 0.30)))
     : RECOVERY_SESSION_KM[goal];
 
-  // Moderate (TUE in 3-slot / THU in 4-slot): ~65% of long run
+  // Moderate (TUE in 3-slot / THU in 4-slot): goal-specific ratio of long run
+  // Shorter plans sustain larger midweek runs; marathon/ultra use a much smaller fraction
   const moderateKm = longRunKm > 0
-    ? Math.max(3, Math.round(longRunKm * 0.65))
+    ? Math.min(MODERATE_RUN_MAX[goal], Math.max(3, Math.round(longRunKm * MODERATE_RUN_RATIO[goal])))
     : Math.max(3, _remainingKm - qualityKm - recoveryKm);
 
   if (slotCount === 3) {
