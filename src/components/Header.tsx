@@ -22,6 +22,7 @@ interface HeaderProps {
   stravaConnected?: boolean;
   syncingStrava?: boolean;
   onSyncStrava?: () => void;
+  hideAuthButtons?: boolean;
 }
 
 export function Header({
@@ -39,6 +40,7 @@ export function Header({
   stravaConnected,
   syncingStrava,
   onSyncStrava,
+  hideAuthButtons,
 }: HeaderProps) {
   const navigate = useNavigate();
   const { signOut } = useAuth();
@@ -189,37 +191,41 @@ export function Header({
             >
               {colorMode === "light" ? <MoonIcon size={18} /> : <SunIcon size={18} />}
             </Box>
-            <Box
-              as="button"
-              onClick={() => navigate("/settings")}
-              fontSize="12px"
-              fontWeight="600"
-              color="text.muted"
-              background="none"
-              border="none"
-              cursor="pointer"
-              whiteSpace="nowrap"
-              _hover={{ color: "text.primary" }}
-            >
-              Settings
-            </Box>
-            <Box
-              as="button"
-              onClick={async () => {
-                await signOut();
-                navigate("/");
-              }}
-              fontSize="12px"
-              fontWeight="600"
-              color="text.muted"
-              background="none"
-              border="none"
-              cursor="pointer"
-              whiteSpace="nowrap"
-              _hover={{ color: "text.primary" }}
-            >
-              Sign out
-            </Box>
+            {!hideAuthButtons && (
+              <>
+                <Box
+                  as="button"
+                  onClick={() => navigate("/settings")}
+                  fontSize="12px"
+                  fontWeight="600"
+                  color="text.muted"
+                  background="none"
+                  border="none"
+                  cursor="pointer"
+                  whiteSpace="nowrap"
+                  _hover={{ color: "text.primary" }}
+                >
+                  Settings
+                </Box>
+                <Box
+                  as="button"
+                  onClick={async () => {
+                    await signOut();
+                    navigate("/");
+                  }}
+                  fontSize="12px"
+                  fontWeight="600"
+                  color="text.muted"
+                  background="none"
+                  border="none"
+                  cursor="pointer"
+                  whiteSpace="nowrap"
+                  _hover={{ color: "text.primary" }}
+                >
+                  Sign out
+                </Box>
+              </>
+            )}
           </HStack>
         </Flex>
       </Flex>

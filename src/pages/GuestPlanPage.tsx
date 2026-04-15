@@ -187,6 +187,7 @@ export function GuestPlanPage() {
           onLinkSaveFile={() => {}}
           onExportJson={() => {}}
           onBack={() => navigate("/plans/new")}
+          hideAuthButtons
         />
 
         <ProgressChart
