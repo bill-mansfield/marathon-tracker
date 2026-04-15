@@ -1,9 +1,11 @@
 import { Box, Flex, Text, HStack } from "@chakra-ui/react";
 import { differenceInDays, parseISO } from "date-fns";
+import { useNavigate } from "react-router-dom";
 import type { PlanWeek, ProgressMap } from "../data/types";
 import { COLORS } from "../theme";
 import { getRunTotals, getWeekActualKm } from "../lib/utils";
 import { SunIcon, MoonIcon, BuildWeeksLogo } from "./Icons";
+import { useAuth } from "../hooks/useAuth";
 
 interface HeaderProps {
   weeks: PlanWeek[];
@@ -38,6 +40,8 @@ export function Header({
   syncingStrava,
   onSyncStrava,
 }: HeaderProps) {
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
   const raceDate = parseISO(raceDateStr);
   const daysUntilRace = differenceInDays(raceDate, new Date());
 
@@ -184,6 +188,37 @@ export function Header({
               alignItems="center"
             >
               {colorMode === "light" ? <MoonIcon size={18} /> : <SunIcon size={18} />}
+            </Box>
+            <Box
+              as="button"
+              onClick={() => navigate("/settings")}
+              fontSize="12px"
+              fontWeight="600"
+              color="text.muted"
+              background="none"
+              border="none"
+              cursor="pointer"
+              whiteSpace="nowrap"
+              _hover={{ color: "text.primary" }}
+            >
+              Settings
+            </Box>
+            <Box
+              as="button"
+              onClick={async () => {
+                await signOut();
+                navigate("/");
+              }}
+              fontSize="12px"
+              fontWeight="600"
+              color="text.muted"
+              background="none"
+              border="none"
+              cursor="pointer"
+              whiteSpace="nowrap"
+              _hover={{ color: "text.primary" }}
+            >
+              Sign out
             </Box>
           </HStack>
         </Flex>
