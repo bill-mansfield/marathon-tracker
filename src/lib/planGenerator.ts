@@ -460,7 +460,7 @@ function generateWeekDays(
     if (restDays.length > 0) {
       const strengthDay = restDays[0];
       const idx = DAY_NAMES.indexOf(strengthDay.day);
-      days[idx] = { day: strengthDay.day, km: 0, description: strengthDesc() };
+      days[idx] = { day: strengthDay.day, km: 0, description: strengthDesc(), isStrength: true };
     }
   }
 
