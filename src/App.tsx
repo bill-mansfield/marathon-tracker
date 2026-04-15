@@ -8,6 +8,7 @@ import { DemoPage } from "./pages/DemoPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { PlanViewPage } from "./pages/PlanViewPage";
 import { PlanCreatorPage } from "./pages/PlanCreatorPage";
+import { GuestPlanPage } from "./pages/GuestPlanPage";
 import { UserSettingsPage } from "./pages/UserSettingsPage";
 
 function App() {
@@ -19,19 +20,14 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/demo" element={<DemoPage />} />
+          {/* Public — no account needed to create or preview a plan */}
+          <Route path="/plans/new" element={<PlanCreatorPage />} />
+          <Route path="/plans/preview" element={<GuestPlanPage />} />
           <Route
             path="/dashboard"
             element={
               <AuthGuard>
                 <DashboardPage />
-              </AuthGuard>
-            }
-          />
-          <Route
-            path="/plans/new"
-            element={
-              <AuthGuard>
-                <PlanCreatorPage />
               </AuthGuard>
             }
           />

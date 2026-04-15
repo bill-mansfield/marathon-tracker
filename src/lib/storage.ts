@@ -1,4 +1,4 @@
-import type { ProgressMap, TrainingPlan } from "../data/types";
+import type { ProgressMap, TrainingPlan, PlanGeneratorConfig } from "../data/types";
 
 declare global {
   interface FileSystemHandlePermissionDescriptor {
@@ -256,6 +256,45 @@ export function exportPlanJson(plan: TrainingPlan, progress: ProgressMap): void 
   link.download = `${safeName}-plan.json`;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+// --- Guest plan (unauthenticated plan creation + preview) ---
+
+const GUEST_PLAN_KEY = "buildweeks-guest-plan";
+const GUEST_PROGRESS_KEY = "buildweeks-guest-progress";
+
+export type GuestPlanDraft = PlanGeneratorConfig & { name: string };
+
+export function saveGuestPlan(draft: GuestPlanDraft): void {
+  localStorage.setItem(GUEST_PLAN_KEY, JSON.stringify(draft));
+}
+
+export function loadGuestPlan(): GuestPlanDraft | null {
+  try {
+    return JSON.parse(localStorage.getItem(GUEST_PLAN_KEY) ?? "null") as GuestPlanDraft | null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearGuestPlan(): void {
+  localStorage.removeItem(GUEST_PLAN_KEY);
+}
+
+export function saveGuestProgress(progress: ProgressMap): void {
+  localStorage.setItem(GUEST_PROGRESS_KEY, JSON.stringify(progress));
+}
+
+export function loadGuestProgress(): ProgressMap {
+  try {
+    return JSON.parse(localStorage.getItem(GUEST_PROGRESS_KEY) ?? "{}") as ProgressMap;
+  } catch {
+    return {};
+  }
+}
+
+export function clearGuestProgress(): void {
+  localStorage.removeItem(GUEST_PROGRESS_KEY);
 }
 
 export function importPlanJson(file: File): Promise<ImportedPlan | null> {
