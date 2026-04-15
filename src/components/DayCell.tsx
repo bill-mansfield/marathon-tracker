@@ -27,7 +27,8 @@ export function DayCell({
 }: DayCellProps) {
   const [editingKm, setEditingKm] = useState(false);
   const [editingDescription, setEditingDescription] = useState(false);
-  const rest = isRestDay(planDay.description, planDay.km) && !progress.isExtra;
+  const rest = isRestDay(planDay.description, planDay.km, planDay.isStrength) && !progress.isExtra;
+  const isStrength = planDay.isStrength === true && !progress.isExtra;
 
   // Compact rest day — just a thin label
   if (rest) {
@@ -47,6 +48,57 @@ export function DayCell({
           {planDay.day}
         </Text>
       </Flex>
+    );
+  }
+
+  // Strength training block
+  if (isStrength) {
+    return (
+      <Box
+        p={2}
+        borderRadius="md"
+        bg={progress.completed ? "rgba(124, 58, 237, 0.06)" : "bg.card"}
+        border="1px solid"
+        borderColor={progress.completed ? "rgba(124, 58, 237, 0.3)" : "border.subtle"}
+        transition="all 0.15s"
+      >
+        <HStack justify="space-between" mb="6px">
+          <Text fontSize="10px" fontWeight="700" color="text.faint" letterSpacing="0.05em" display={{ base: "none", lg: "block" }}>
+            {planDay.day}
+          </Text>
+          <Text fontSize="10px" fontWeight="700" color="#7c3aed" letterSpacing="0.05em" textTransform="uppercase">
+            Strength
+          </Text>
+        </HStack>
+        <Box mb={2}>
+          {["Squats 3×8", "Deadlifts 3×5", "RDL 3×8", "Hip strength + mobility"].map((ex) => (
+            <Text key={ex} fontSize="10px" color="text.muted" lineHeight="1.6">
+              · {ex}
+            </Text>
+          ))}
+        </Box>
+        <HStack justify="space-between" align="center">
+          <Box
+            as="button"
+            onClick={() => onUpdate({ completed: !progress.completed })}
+            cursor="pointer"
+            background="none"
+            border="none"
+            padding="0"
+            display="flex"
+            alignItems="center"
+            _hover={{ opacity: 0.7 }}
+            transition="all 0.15s"
+            title={progress.completed ? "Mark incomplete" : "Mark complete"}
+          >
+            <CheckboxIcon checked={progress.completed} size={18} />
+          </Box>
+          <NotePopover
+            note={progress.note}
+            onSave={(note) => onUpdate({ note })}
+          />
+        </HStack>
+      </Box>
     );
   }
 

@@ -56,7 +56,8 @@ export function getWeekActualKm(
   }, 0);
 }
 
-export function isRestDay(description: string, km: number): boolean {
+export function isRestDay(description: string, km: number, isStrength?: boolean): boolean {
+  if (isStrength) return false;
   return km === 0 && !description.toLowerCase().includes("shakeout");
 }
 
@@ -68,7 +69,7 @@ export function getRunTotals(
   return week.days.reduce(
     (totals, day) => {
       const key = getProgressKey(weekIndex, day.day);
-      const plannedIsRunnable = !isRestDay(day.description, day.km);
+      const plannedIsRunnable = !isRestDay(day.description, day.km, day.isStrength);
       const extras = getExtraRunsForDay(weekIndex, day.day, progress);
       const plannedRun = progress[key];
 

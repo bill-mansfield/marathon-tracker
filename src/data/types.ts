@@ -4,6 +4,7 @@ export interface PlanDay {
   day: DayName;
   km: number;
   description: string;
+  isStrength?: boolean;
 }
 
 export interface PlanWeek {
