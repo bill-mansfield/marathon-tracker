@@ -51,11 +51,27 @@ export function NoteIcon({ hasNote, size = 14 }: { hasNote: boolean; size?: numb
 }
 
 export function StravaIcon({ linked, size = 14 }: { linked: boolean; size?: number }) {
-  // Simplified Strava-style "S" bolt shape
+  // Real Strava logo mark: large upward chevron (∧) + small downward chevron (∨)
+  const main = linked ? "#fc4c02" : "#b8ad9e";
+  const secondary = linked ? "#fc8c60" : "#c8c0b4";
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={linked ? "#fc4c02" : "#b8ad9e"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="6 20 12 8 18 20" />
-      <polyline points="12 8 15 14 12 14" opacity={linked ? 1 : 0.5} />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      {/* Large upward chevron — the "A" */}
+      <polyline
+        points="2,20 12,3 22,20"
+        stroke={main}
+        strokeWidth="3.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* Small downward chevron — the "V" */}
+      <polyline
+        points="8,20 12,24 16,20"
+        stroke={secondary}
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
