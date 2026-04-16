@@ -1,0 +1,33 @@
+# Components
+
+- **App** — `src/App.tsx`
+- **AuthGuard** — `src/components/AuthGuard.tsx`
+- **DayCell** — props: planDay, progress, onUpdate, compact, onRemove, removeLabel — `src/components/DayCell.tsx`
+- **Header** — props: weeks, planName, raceDateStr, progress, colorMode, onToggleColorMode, linkedFileEnabled, supportsLinkedFile, onLinkSaveFile, onExportJson — `src/components/Header.tsx`
+- **BuildWeeksLogo** — props: iconSize, onClick — `src/components/Icons.tsx`
+- **CheckIcon** — props: size, color — `src/components/Icons.tsx`
+- **CheckboxIcon** — props: checked, size — `src/components/Icons.tsx`
+- **StarIcon** — props: filled, size, color — `src/components/Icons.tsx`
+- **NoteIcon** — props: hasNote, size — `src/components/Icons.tsx`
+- **StravaIcon** — props: linked, size — `src/components/Icons.tsx`
+- **SunIcon** — props: size — `src/components/Icons.tsx`
+- **MoonIcon** — props: size — `src/components/Icons.tsx`
+- **PencilIcon** — props: size — `src/components/Icons.tsx`
+- **NotePopover** — props: note, onSave — `src/components/NotePopover.tsx`
+- **PlanCard** — props: plan, onClick, onDelete, onStatusChange — `src/components/PlanCard.tsx`
+- **ProgressChart** — props: weeks, progress, selectedWeek, onSelectWeek, colorMode — `src/components/ProgressChart.tsx`
+- **StarRating** — props: rating, onChange — `src/components/StarRating.tsx`
+- **StatusBadge** — props: status — `src/components/StatusBadge.tsx`
+- **StravaPopover** — props: url, onSave — `src/components/StravaPopover.tsx`
+- **WeekCard** — props: week, weekIndex, progress, onUpdate, onAddRun, onRemoveRun, isCurrentWeek — `src/components/WeekCard.tsx`
+- **WeekTimeline** — props: weeks, progress, selectedWeek, currentWeek, onSelectWeek — `src/components/WeekTimeline.tsx`
+- **AuthProvider** — `src/contexts/AuthContext.tsx`
+- **DashboardPage** — `src/pages/DashboardPage.tsx`
+- **DemoPage** — `src/pages/DemoPage.tsx`
+- **GuestPlanPage** — `src/pages/GuestPlanPage.tsx`
+- **LandingPage** — `src/pages/LandingPage.tsx`
+- **LoginPage** — `src/pages/LoginPage.tsx`
+- **PlanCreatorPage** — `src/pages/PlanCreatorPage.tsx`
+- **PlanViewPage** — `src/pages/PlanViewPage.tsx`
+- **SignupPage** — `src/pages/SignupPage.tsx`
+- **UserSettingsPage** — `src/pages/UserSettingsPage.tsx`
