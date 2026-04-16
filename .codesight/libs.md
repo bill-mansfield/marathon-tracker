@@ -1,0 +1,34 @@
+# Libraries
+
+- `src/hooks/useAuth.ts` — function useAuth: () => void
+- `src/hooks/useColorMode.ts` — function useColorMode: () => void
+- `src/hooks/usePlanData.ts` — function usePlanData: (planId) => PlanData
+- `src/lib/planGenerator.ts` — function generatePlan: (config) => PlanWeek[], const EXAMPLE_PLANS: { id: string; name: string; description: string; config: PlanGeneratorConfig }[]
+- `src/lib/storage.ts`
+  - function loadProgress: () => ProgressMap
+  - function saveProgress: (progress) => void
+  - function supportsLinkedProgressFile: () => boolean
+  - function hasLinkedProgressFile: () => Promise<boolean>
+  - function loadLinkedProgress: () => Promise<ProgressMap | null>
+  - function linkProgressFile: (progress) => Promise<boolean>
+  - _...13 more_
+- `src/lib/stravaSync.ts`
+  - function syncStravaActivities: (plan, currentProgress) => Promise<SyncResult>
+  - function getStravaProfile: () => Promise<
+  - function disconnectStrava: () => Promise<void>
+  - interface SyncResult
+- `src/lib/supabaseStorage.ts`
+  - function fetchUserPlans: () => Promise<TrainingPlan[]>
+  - function createPlan: (plan) => Promise<TrainingPlan>
+  - function updatePlanStatus: (planId, status) => Promise<void>
+  - function deletePlan: (planId) => Promise<void>
+  - function renamePlan: (planId, name) => Promise<void>
+  - function importPlanProgress: (planId, progress) => Promise<void>
+- `src/lib/utils.ts`
+  - function getProgressKey: (weekIndex, day) => string
+  - function getExtraRunKey: (weekIndex, day) => string
+  - function getExtraRunsForDay: (weekIndex, day, progress) => Array<[string, RunProgress]>
+  - function getWeekActualKm: (week, weekIndex, progress) => number
+  - function isRestDay: (description, km, isStrength?) => boolean
+  - function getRunTotals: (week, weekIndex, progress) => void
+  - _...1 more_
